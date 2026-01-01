@@ -97,6 +97,55 @@ describe("KitchenOwl API Client", () => {
     });
   });
 
+  describe("addItemToShoppingList with description", () => {
+    it("sends name and description to API", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 123 }),
+      });
+
+      const { addItemToShoppingList } = await import("@/lib/integrations/kitchenowl");
+      const result = await addItemToShoppingList(
+        "https://kitchen.example.com",
+        "token",
+        1,
+        "onion",
+        "1"
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "https://kitchen.example.com/api/shoppinglist/1/add-item-by-name",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ name: "onion", description: "1" }),
+        })
+      );
+    });
+
+    it("omits description when not provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 123 }),
+      });
+
+      const { addItemToShoppingList } = await import("@/lib/integrations/kitchenowl");
+      await addItemToShoppingList(
+        "https://kitchen.example.com",
+        "token",
+        1,
+        "onion"
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: JSON.stringify({ name: "onion" }),
+        })
+      );
+    });
+  });
+
   describe("addItemsToShoppingList", () => {
     it("adds multiple items and returns success count", async () => {
       mockFetch
@@ -109,7 +158,7 @@ describe("KitchenOwl API Client", () => {
         "https://kitchen.example.com",
         "token",
         1,
-        ["Item 1", "Item 2", "Item 3"]
+        [{ name: "Item 1" }, { name: "Item 2" }, { name: "Item 3" }]
       );
 
       expect(result.successCount).toBe(2);

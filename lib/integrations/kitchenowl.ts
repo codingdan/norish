@@ -27,6 +27,11 @@ export interface AddItemsResult {
   errors: string[];
 }
 
+export interface ShoppingListItem {
+  name: string;
+  description?: string;
+}
+
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
@@ -112,15 +117,21 @@ export async function addItemToShoppingList(
   serverUrl: string,
   apiToken: string,
   shoppingListId: number,
-  itemName: string
+  itemName: string,
+  description?: string
 ): Promise<AddItemResult> {
   const url = `${normalizeUrl(serverUrl)}/api/shoppinglist/${shoppingListId}/add-item-by-name`;
 
   try {
+    const body: { name: string; description?: string } = { name: itemName };
+    if (description) {
+      body.description = description;
+    }
+
     const response = await fetchWithTimeout(url, {
       method: "POST",
       headers: buildHeaders(apiToken),
-      body: JSON.stringify({ name: itemName }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -143,24 +154,28 @@ export async function addItemsToShoppingList(
   serverUrl: string,
   apiToken: string,
   shoppingListId: number,
-  items: string[]
+  items: ShoppingListItem[]
 ): Promise<AddItemsResult> {
   let successCount = 0;
   let failCount = 0;
   const errors: string[] = [];
 
-  // Add small delay between requests to avoid rate limiting
   for (const item of items) {
-    const result = await addItemToShoppingList(serverUrl, apiToken, shoppingListId, item);
+    const result = await addItemToShoppingList(
+      serverUrl,
+      apiToken,
+      shoppingListId,
+      item.name,
+      item.description
+    );
     if (result.success) {
       successCount++;
     } else {
       failCount++;
       if (result.error) {
-        errors.push(`${item}: ${result.error}`);
+        errors.push(`${item.name}: ${result.error}`);
       }
     }
-    // 50ms delay between requests
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
