@@ -2,7 +2,7 @@
 
 import { Tabs, Tab } from "@heroui/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { UserCircleIcon, HomeIcon, ServerIcon, ShieldCheckIcon } from "@heroicons/react/20/solid";
+import { UserCircleIcon, HomeIcon, ServerIcon, ShieldCheckIcon, PuzzlePieceIcon } from "@heroicons/react/20/solid";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 
@@ -23,6 +23,13 @@ const HouseholdSettingsTab = dynamic(
 const CalDavSettingsTab = dynamic(() => import("./caldav/components/caldav-settings-content"), {
   loading: () => <SettingsSkeleton />,
 });
+
+const IntegrationsSettingsTab = dynamic(
+  () => import("./integrations/components/integrations-settings-content"),
+  {
+    loading: () => <SettingsSkeleton />,
+  }
+);
 
 const AdminSettingsTab = dynamic(() => import("./admin/components/admin-settings-content"), {
   loading: () => <SettingsSkeleton />,
@@ -90,6 +97,20 @@ function SettingsContent() {
         >
           <div className="py-4">
             <CalDavSettingsTab />
+          </div>
+        </Tab>
+
+        <Tab
+          key="integrations"
+          title={
+            <div className="flex items-center gap-2">
+              <PuzzlePieceIcon className="h-5 w-5" />
+              <span>Integrations</span>
+            </div>
+          }
+        >
+          <div className="py-4">
+            <IntegrationsSettingsTab />
           </div>
         </Tab>
 
