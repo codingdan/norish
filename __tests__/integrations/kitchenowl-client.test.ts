@@ -116,4 +116,40 @@ describe("KitchenOwl API Client", () => {
       expect(result.failCount).toBe(1);
     });
   });
+
+  describe("error handling", () => {
+    it("handles network errors gracefully", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      const { testConnection } = await import("@/lib/integrations/kitchenowl");
+      const result = await testConnection("https://kitchen.example.com", "token");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Network error");
+    });
+
+    it("handles timeout errors", async () => {
+      const abortError = new Error("The operation was aborted");
+      abortError.name = "AbortError";
+      mockFetch.mockRejectedValueOnce(abortError);
+
+      const { testConnection } = await import("@/lib/integrations/kitchenowl");
+      const result = await testConnection("https://kitchen.example.com", "token");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("timed out");
+    });
+
+    it("handles malformed JSON response", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.reject(new Error("Invalid JSON")),
+      });
+
+      const { testConnection } = await import("@/lib/integrations/kitchenowl");
+      const result = await testConnection("https://kitchen.example.com", "token");
+
+      expect(result.success).toBe(false);
+    });
+  });
 });
