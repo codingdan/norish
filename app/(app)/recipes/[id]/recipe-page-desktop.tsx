@@ -14,6 +14,7 @@ import Link from "next/link";
 import AuthorChip from "./components/author-chip";
 import { useRecipeContextRequired } from "./context";
 import ServingsControl from "./components/servings-control";
+import SendToKitchenOwlButton from "./components/send-to-kitchenowl";
 
 import { formatMinutesHM } from "@/lib/helpers";
 import SystemConvertMenu from "@/app/(app)/recipes/[id]/components/system-convert-menu";
@@ -141,6 +142,9 @@ export default function RecipePageDesktop() {
 
               {/* Add to groceries button */}
               <AddToGroceries recipeId={recipe.id} />
+
+              {/* Add to KitchenOwl button */}
+              <SendToKitchenOwlButton />
             </CardBody>
           </Card>
 
