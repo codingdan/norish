@@ -14,6 +14,10 @@ export const integrations = pgTable(
     defaultHouseholdId: integer("default_household_id"),
     defaultShoppingListId: integer("default_shopping_list_id"),
     enabled: boolean("enabled").default(true).notNull(),
+    // New normalization settings
+    enableNormalization: boolean("enable_normalization").default(true).notNull(),
+    useAiNormalization: boolean("use_ai_normalization").default(true).notNull(),
+    normalizationModel: varchar("normalization_model", { length: 100 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -9,6 +9,9 @@ export interface KitchenOwlConfig {
   defaultHouseholdId?: number | null;
   defaultShoppingListId?: number | null;
   enabled: boolean;
+  enableNormalization: boolean;
+  useAiNormalization: boolean;
+  normalizationModel?: string | null;
 }
 
 export interface KitchenOwlConfigInput {
@@ -16,6 +19,9 @@ export interface KitchenOwlConfigInput {
   apiToken: string;
   defaultHouseholdId?: number | null;
   defaultShoppingListId?: number | null;
+  enableNormalization?: boolean;
+  useAiNormalization?: boolean;
+  normalizationModel?: string | null;
 }
 
 export async function getKitchenOwlConfig(userId: string): Promise<KitchenOwlConfig | null> {
@@ -36,6 +42,9 @@ export async function getKitchenOwlConfig(userId: string): Promise<KitchenOwlCon
     defaultHouseholdId: integration.defaultHouseholdId,
     defaultShoppingListId: integration.defaultShoppingListId,
     enabled: integration.enabled,
+    enableNormalization: integration.enableNormalization,
+    useAiNormalization: integration.useAiNormalization,
+    normalizationModel: integration.normalizationModel,
   };
 }
 
@@ -60,6 +69,9 @@ export async function saveKitchenOwlConfig(
         encryptedToken,
         defaultHouseholdId: config.defaultHouseholdId ?? null,
         defaultShoppingListId: config.defaultShoppingListId ?? null,
+        enableNormalization: config.enableNormalization ?? true,
+        useAiNormalization: config.useAiNormalization ?? true,
+        normalizationModel: config.normalizationModel ?? null,
         updatedAt: new Date(),
       })
       .where(eq(integrations.id, existing.id))
@@ -76,6 +88,9 @@ export async function saveKitchenOwlConfig(
       encryptedToken,
       defaultHouseholdId: config.defaultHouseholdId ?? null,
       defaultShoppingListId: config.defaultShoppingListId ?? null,
+      enableNormalization: config.enableNormalization ?? true,
+      useAiNormalization: config.useAiNormalization ?? true,
+      normalizationModel: config.normalizationModel ?? null,
       enabled: true,
     })
     .returning();

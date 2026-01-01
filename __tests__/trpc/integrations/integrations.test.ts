@@ -30,6 +30,9 @@ describe("integrations tRPC router", () => {
         defaultHouseholdId: 1,
         defaultShoppingListId: 1,
         enabled: true,
+        enableNormalization: true,
+        useAiNormalization: true,
+        normalizationModel: null,
       });
 
       // Test token masking logic
