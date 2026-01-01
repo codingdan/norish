@@ -14,6 +14,8 @@ import {
 } from "@/lib/integrations/kitchenowl";
 import { getRecipeFull } from "@/server/db/repositories/recipes";
 import { TRPCError } from "@trpc/server";
+import { normalizeIngredients } from "@/server/services/ingredient-normalizer";
+import type { ShoppingListItem } from "@/lib/integrations/kitchenowl";
 
 function maskToken(token: string): string {
   if (token.length <= 8) return "••••••••";
@@ -36,6 +38,14 @@ function formatIngredient(
   return parts.join(" ");
 }
 
+// Helper to format quantity description
+function formatQuantity(amount: number | null, unit: string | null): string | undefined {
+  if (amount === null || amount <= 0) return undefined;
+  const parts: string[] = [parseFloat(amount.toFixed(2)).toString()];
+  if (unit) parts.push(unit);
+  return parts.join(" ");
+}
+
 export const integrationsRouter = router({
   // Get KitchenOwl configuration (with masked token)
   getKitchenOwlConfig: authedProcedure.query(async ({ ctx }) => {
@@ -48,6 +58,9 @@ export const integrationsRouter = router({
       defaultHouseholdId: config.defaultHouseholdId,
       defaultShoppingListId: config.defaultShoppingListId,
       enabled: config.enabled,
+      enableNormalization: config.enableNormalization,
+      useAiNormalization: config.useAiNormalization,
+      normalizationModel: config.normalizationModel,
     };
   }),
 
@@ -59,6 +72,9 @@ export const integrationsRouter = router({
         apiToken: z.string().min(1, "API token is required"),
         defaultHouseholdId: z.number().optional(),
         defaultShoppingListId: z.number().optional(),
+        enableNormalization: z.boolean().optional(),
+        useAiNormalization: z.boolean().optional(),
+        normalizationModel: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -67,6 +83,9 @@ export const integrationsRouter = router({
         apiToken: input.apiToken,
         defaultHouseholdId: input.defaultHouseholdId,
         defaultShoppingListId: input.defaultShoppingListId,
+        enableNormalization: input.enableNormalization,
+        useAiNormalization: input.useAiNormalization,
+        normalizationModel: input.normalizationModel,
       });
       return { success: true };
     }),
@@ -164,12 +183,39 @@ export const integrationsRouter = router({
         );
       }
 
-      // Format ingredients with scaled amounts
-      const items = ingredients.map((ing) => {
-        const scaledAmount =
-          ing.amount !== null ? ing.amount * input.servingMultiplier : null;
-        return formatIngredient(scaledAmount, ing.unit, ing.ingredientName);
-      });
+      // Build items with normalization
+      let items: ShoppingListItem[];
+
+      if (config.enableNormalization) {
+        // Normalize ingredient names
+        const ingredientNames = ingredients.map((ing) => ing.ingredientName);
+        const normalizedMap = await normalizeIngredients(ingredientNames, {
+          useAi: config.useAiNormalization,
+          model: config.normalizationModel ?? undefined,
+        });
+
+        items = ingredients.map((ing) => {
+          const scaledAmount = ing.amount !== null
+            ? ing.amount * input.servingMultiplier
+            : null;
+
+          return {
+            name: normalizedMap.get(ing.ingredientName) ?? ing.ingredientName,
+            description: formatQuantity(scaledAmount, ing.unit),
+          };
+        });
+      } else {
+        // No normalization - send full ingredient strings (legacy behavior)
+        items = ingredients.map((ing) => {
+          const scaledAmount = ing.amount !== null
+            ? ing.amount * input.servingMultiplier
+            : null;
+
+          return {
+            name: formatIngredient(scaledAmount, ing.unit, ing.ingredientName),
+          };
+        });
+      }
 
       const result = await addItemsToShoppingList(
         config.serverUrl,
