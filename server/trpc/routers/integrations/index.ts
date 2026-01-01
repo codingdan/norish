@@ -91,22 +91,33 @@ export const integrationsRouter = router({
     }),
 
   // Get shopping lists for a household
+  // Accepts optional serverUrl/apiToken for initial setup before config is saved
   getShoppingLists: authedProcedure
     .input(
       z.object({
         householdId: z.number(),
+        serverUrl: z.string().url().optional(),
+        apiToken: z.string().min(1).optional(),
       })
     )
     .query(async ({ ctx, input }): Promise<KitchenOwlShoppingList[]> => {
-      const config = await getKitchenOwlConfig(ctx.user.id);
-      if (!config) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "KitchenOwl not configured",
-        });
+      // Use provided credentials (initial setup) or fall back to saved config
+      let serverUrl = input.serverUrl;
+      let apiToken = input.apiToken;
+
+      if (!serverUrl || !apiToken) {
+        const config = await getKitchenOwlConfig(ctx.user.id);
+        if (!config) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "KitchenOwl not configured",
+          });
+        }
+        serverUrl = config.serverUrl;
+        apiToken = config.apiToken;
       }
 
-      return getShoppingLists(config.serverUrl, config.apiToken, input.householdId);
+      return getShoppingLists(serverUrl, apiToken, input.householdId);
     }),
 
   // Send recipe ingredients to KitchenOwl

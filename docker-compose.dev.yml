@@ -1,0 +1,80 @@
+# Full Docker development environment with hot-reload
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: norish-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: norish
+      POSTGRES_PASSWORD: norish
+      POSTGRES_DB: norish
+    volumes:
+      - norish_dev_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U norish -d norish"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: norish-dev-redis
+    restart: unless-stopped
+    volumes:
+      - norish_dev_redis:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  chrome-headless:
+    image: zenika/alpine-chrome:latest
+    container_name: norish-dev-chrome
+    restart: unless-stopped
+    command:
+      - "--no-sandbox"
+      - "--disable-gpu"
+      - "--disable-dev-shm-usage"
+      - "--remote-debugging-address=0.0.0.0"
+      - "--remote-debugging-port=3000"
+      - "--headless"
+    ports:
+      - "3003:3000"
+
+  app:
+    image: node:22-alpine
+    container_name: norish-dev-app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - norish_dev_node_modules:/app/node_modules
+      - norish_dev_next:/app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://norish:norish@db:5432/norish
+      - REDIS_URL=redis://redis:6379
+      - BROWSER_WS_ENDPOINT=ws://chrome-headless:3000
+      - MASTER_KEY=dev-master-key-32-chars-exactly!
+      - NEXTAUTH_SECRET=dev-secret-for-local-testing-only
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "npm install -g pnpm@10.11.0 && pnpm install && pnpm dev"
+    tty: true
+    stdin_open: true
+
+volumes:
+  norish_dev_db:
+  norish_dev_redis:
+  norish_dev_node_modules:
+  norish_dev_next:

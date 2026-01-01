@@ -53,6 +53,7 @@ export default function KitchenOwlConfigCard() {
   const [serverUrl, setServerUrl] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [showToken, setShowToken] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<
     number | null
   >(null);
@@ -67,12 +68,17 @@ export default function KitchenOwlConfigCard() {
     message: string;
   } | null>(null);
 
-  // Query for shopping lists when household is selected
+  // Query for shopping lists when household is selected (works for both new setup and editing)
+  // Pass credentials during initial setup (before config is saved)
   const shoppingListsQuery = useQuery({
     ...trpc.integrations.getShoppingLists.queryOptions({
       householdId: selectedHouseholdId!,
+      // Include credentials for initial setup when not yet configured
+      ...(households.length > 0 && !isConfigured && serverUrl && apiToken
+        ? { serverUrl, apiToken }
+        : {}),
     }),
-    enabled: !!selectedHouseholdId && isConfigured,
+    enabled: !!selectedHouseholdId && (isConfigured || households.length > 0),
   });
 
   // Initialize form with existing config
@@ -161,7 +167,8 @@ export default function KitchenOwlConfigCard() {
         color: "success",
       });
 
-      // Clear token from form after saving
+      // Reset form state after saving
+      setIsEditing(false);
       setApiToken("");
       setShowToken(false);
     } catch {
@@ -183,6 +190,7 @@ export default function KitchenOwlConfigCard() {
       });
 
       // Reset form state
+      setIsEditing(false);
       setServerUrl("");
       setApiToken("");
       setSelectedHouseholdId(null);
@@ -211,8 +219,8 @@ export default function KitchenOwlConfigCard() {
     );
   }
 
-  // Connected state view
-  if (isConfigured && !apiToken) {
+  // Connected state view (show when configured and not editing)
+  if (isConfigured && !isEditing) {
     return (
       <>
         <Card>
@@ -286,6 +294,7 @@ export default function KitchenOwlConfigCard() {
                 variant="bordered"
                 onPress={() => {
                   // Switch to edit mode
+                  setIsEditing(true);
                   setApiToken("");
                   setShowToken(false);
                 }}
@@ -466,11 +475,11 @@ export default function KitchenOwlConfigCard() {
               ))}
             </Select>
 
-            {selectedHouseholdId && isConfigured && (
+            {selectedHouseholdId && (isConfigured || households.length > 0) && (
               <Select
-                description="Optionally select a default shopping list"
+                description="Select a default shopping list for recipe ingredients"
                 isLoading={shoppingListsQuery.isLoading}
-                label="Default Shopping List (optional)"
+                label="Default Shopping List"
                 placeholder="Select a shopping list"
                 selectedKeys={
                   selectedShoppingListId
@@ -500,6 +509,7 @@ export default function KitchenOwlConfigCard() {
             <Button
               variant="flat"
               onPress={() => {
+                setIsEditing(false);
                 setApiToken("");
                 setServerUrl(config?.serverUrl || "");
                 setTestResult(null);
