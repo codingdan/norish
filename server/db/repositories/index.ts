@@ -15,3 +15,4 @@ export * from "@/server/db/repositories/server-config";
 export * from "@/server/db/repositories/favorites";
 export * from "@/server/db/repositories/user-allergies";
 export * from "@/server/db/repositories/integrations";
+export * from "@/server/db/repositories/ingredient-mappings";
