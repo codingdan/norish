@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -60,6 +60,9 @@ export default function IngredientCacheTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
+  // Delete state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const {
     entries,
     total,
@@ -77,15 +80,15 @@ export default function IngredientCacheTable() {
   const totalPages = Math.ceil(total / PAGE_LIMIT);
 
   // Debounced search
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    // Simple debounce using setTimeout
+  useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
+      setDebouncedSearch(search);
+      if (search !== debouncedSearch) {
+        setPage(1);
+      }
     }, 300);
     return () => clearTimeout(timeoutId);
-  };
+  }, [search]);
 
   const handleAdd = async () => {
     if (!newOriginal.trim() || !newNormalized.trim()) return;
@@ -112,7 +115,9 @@ export default function IngredientCacheTable() {
   };
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     await deleteEntry({ id });
+    setDeletingId(null);
   };
 
   const handleClear = async () => {
@@ -143,10 +148,11 @@ export default function IngredientCacheTable() {
         <div className="flex items-center gap-2">
           <Input
             className="w-full sm:w-64"
+            aria-label="Search ingredient mappings"
             placeholder="Search mappings..."
             size="sm"
             value={search}
-            onValueChange={handleSearchChange}
+            onValueChange={setSearch}
           />
           <Button
             color="danger"
@@ -243,6 +249,7 @@ export default function IngredientCacheTable() {
                     <>
                       <Button
                         isIconOnly
+                        aria-label="Save"
                         color="success"
                         isLoading={isUpdating}
                         size="sm"
@@ -254,6 +261,7 @@ export default function IngredientCacheTable() {
                       </Button>
                       <Button
                         isIconOnly
+                        aria-label="Cancel"
                         color="default"
                         size="sm"
                         title="Cancel"
@@ -267,6 +275,7 @@ export default function IngredientCacheTable() {
                     <>
                       <Button
                         isIconOnly
+                        aria-label="Edit normalized name"
                         color="default"
                         size="sm"
                         title="Edit normalized name"
@@ -277,8 +286,9 @@ export default function IngredientCacheTable() {
                       </Button>
                       <Button
                         isIconOnly
+                        aria-label="Delete mapping"
                         color="danger"
-                        isLoading={isDeleting}
+                        isLoading={deletingId === entry.id}
                         size="sm"
                         title="Delete mapping"
                         variant="light"
