@@ -151,6 +151,10 @@ export const AIConfigSchema = z.object({
   maxTokens: z.number().int().positive(),
   autoTagAllergies: z.boolean().default(true),
   alwaysUseAI: z.boolean().default(false),
+  // Ingredient normalization settings
+  enableIngredientNormalization: z.boolean().default(true),
+  useAiIngredientNormalization: z.boolean().default(true),
+  ingredientNormalizationModel: z.string().optional(), // Override model for normalization
 });
 
 export type AIConfig = z.infer<typeof AIConfigSchema>;

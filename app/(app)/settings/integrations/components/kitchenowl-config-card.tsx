@@ -18,7 +18,6 @@ import {
   useDisclosure,
   addToast,
   Link,
-  Switch,
 } from "@heroui/react";
 import {
   ServerIcon,
@@ -62,11 +61,6 @@ export default function KitchenOwlConfigCard() {
     number | null
   >(null);
 
-  // Normalization settings
-  const [enableNormalization, setEnableNormalization] = useState(true);
-  const [useAiNormalization, setUseAiNormalization] = useState(true);
-  const [normalizationModel, setNormalizationModel] = useState("");
-
   // Test connection state
   const [households, setHouseholds] = useState<KitchenOwlHousehold[]>([]);
   const [testResult, setTestResult] = useState<{
@@ -93,9 +87,6 @@ export default function KitchenOwlConfigCard() {
       setServerUrl(config.serverUrl || "");
       setSelectedHouseholdId(config.defaultHouseholdId ?? null);
       setSelectedShoppingListId(config.defaultShoppingListId ?? null);
-      setEnableNormalization(config.enableNormalization ?? true);
-      setUseAiNormalization(config.useAiNormalization ?? true);
-      setNormalizationModel(config.normalizationModel ?? "");
     }
   }, [config]);
 
@@ -168,9 +159,6 @@ export default function KitchenOwlConfigCard() {
         apiToken,
         defaultHouseholdId: selectedHouseholdId,
         defaultShoppingListId: selectedShoppingListId ?? undefined,
-        enableNormalization,
-        useAiNormalization,
-        normalizationModel: normalizationModel || undefined,
       });
 
       addToast({
@@ -290,16 +278,6 @@ export default function KitchenOwlConfigCard() {
                     </p>
                   </div>
                 )}
-                <div>
-                  <p className="text-default-500 text-xs">Normalization</p>
-                  <p className="font-medium">
-                    {config?.enableNormalization
-                      ? config?.useAiNormalization
-                        ? "AI-powered"
-                        : "Local only"
-                      : "Disabled"}
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -522,51 +500,6 @@ export default function KitchenOwlConfigCard() {
                 )}
               </Select>
             )}
-
-            {/* Normalization Settings */}
-            <div className="space-y-4 border-t border-default-200 pt-4">
-              <h4 className="text-sm font-medium">Ingredient Normalization</h4>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <p className="text-sm">Enable normalization</p>
-                  <p className="text-xs text-default-500">
-                    Clean up ingredient names for better matching
-                  </p>
-                </div>
-                <Switch
-                  isSelected={enableNormalization}
-                  onValueChange={setEnableNormalization}
-                />
-              </div>
-
-              {enableNormalization && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <p className="text-sm">Use AI normalization</p>
-                      <p className="text-xs text-default-500">
-                        Use AI for smarter name extraction (requires AI enabled)
-                      </p>
-                    </div>
-                    <Switch
-                      isSelected={useAiNormalization}
-                      onValueChange={setUseAiNormalization}
-                    />
-                  </div>
-
-                  {useAiNormalization && (
-                    <Input
-                      label="Model override (optional)"
-                      placeholder="e.g., gpt-4o-mini (leave empty for default)"
-                      description="Override the AI model used for normalization"
-                      value={normalizationModel}
-                      onValueChange={setNormalizationModel}
-                    />
-                  )}
-                </>
-              )}
-            </div>
           </>
         )}
 

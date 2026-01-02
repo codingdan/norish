@@ -9,8 +9,13 @@ const log = createLogger("ingredient-normalizer");
 
 const PROMPT_PATH = join(process.cwd(), "server", "ai", "prompts", "ingredient-normalization.txt");
 
+interface NormalizationMapping {
+  original: string;
+  normalized: string;
+}
+
 interface NormalizationResult {
-  mappings: Record<string, string>;
+  mappings: NormalizationMapping[];
 }
 
 const normalizationSchema = {
@@ -20,9 +25,23 @@ const normalizationSchema = {
     type: "object",
     properties: {
       mappings: {
-        type: "object",
-        additionalProperties: { type: "string" },
-        description: "Map of original ingredient names to normalized names",
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            original: {
+              type: "string",
+              description: "The original ingredient name from the input",
+            },
+            normalized: {
+              type: "string",
+              description: "The normalized/cleaned ingredient name",
+            },
+          },
+          required: ["original", "normalized"],
+          additionalProperties: false,
+        },
+        description: "Array of original to normalized ingredient mappings",
       },
     },
     required: ["mappings"],
@@ -77,12 +96,19 @@ async function aiNormalize(ingredients: string[]): Promise<Map<string, string> |
       prompt
     );
 
-    if (!result?.mappings) {
+    if (!result?.mappings || !Array.isArray(result.mappings)) {
       log.warn("AI returned empty or invalid response");
       return null;
     }
 
-    return new Map(Object.entries(result.mappings));
+    // Convert array of {original, normalized} to Map
+    const mappingMap = new Map<string, string>();
+    for (const mapping of result.mappings) {
+      if (mapping.original && mapping.normalized) {
+        mappingMap.set(mapping.original, mapping.normalized);
+      }
+    }
+    return mappingMap;
   } catch (error) {
     log.error({ err: error }, "AI normalization failed");
     return null;
@@ -104,6 +130,8 @@ export async function normalizeIngredients(
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
 
+  log.info({ count: ingredients.length, useAi: options.useAi }, "Starting ingredient normalization");
+
   if (ingredients.length === 0) {
     return result;
   }
@@ -117,6 +145,7 @@ export async function normalizeIngredients(
 
   // Step 1: Check cache
   const cached = await getCachedMappings(normalizedKeys);
+  log.debug({ cachedCount: cached.size }, "Cache lookup complete");
 
   // Map cached results back to original keys
   for (const [key, normalized] of cached) {
@@ -132,14 +161,23 @@ export async function normalizeIngredients(
   );
 
   if (uncached.length === 0) {
+    log.info("All ingredients found in cache");
     return result;
   }
+
+  log.debug({ uncachedCount: uncached.length, uncached }, "Ingredients not in cache");
 
   // Step 2: Try AI normalization if enabled
   let aiResults: Map<string, string> | null = null;
 
   if (options.useAi) {
+    log.info("Attempting AI normalization");
     aiResults = await aiNormalize(uncached);
+    if (aiResults) {
+      log.info({ aiResultCount: aiResults.size }, "AI normalization successful");
+    }
+  } else {
+    log.info("AI normalization disabled, using local fallback");
   }
 
   // Step 3: Process results
@@ -147,9 +185,11 @@ export async function normalizeIngredients(
 
   for (const ingredient of uncached) {
     let normalized: string;
+    let source: string;
 
     if (aiResults?.has(ingredient)) {
       normalized = aiResults.get(ingredient)!;
+      source = "ai";
       toCache.push({
         rawName: ingredient,
         normalizedName: normalized,
@@ -158,14 +198,17 @@ export async function normalizeIngredients(
     } else {
       // Use local fallback (don't cache)
       normalized = localNormalize(ingredient);
+      source = "local";
     }
 
+    log.debug({ original: ingredient, normalized, source }, "Normalized ingredient");
     result.set(ingredient, normalized);
   }
 
   // Cache AI results only
   if (toCache.length > 0) {
     await saveMappings(toCache);
+    log.info({ cachedCount: toCache.length }, "Saved AI results to cache");
   }
 
   return result;

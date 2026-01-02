@@ -16,6 +16,10 @@ import { getRecipeFull } from "@/server/db/repositories/recipes";
 import { TRPCError } from "@trpc/server";
 import { normalizeIngredients } from "@/server/services/ingredient-normalizer";
 import type { ShoppingListItem } from "@/lib/integrations/kitchenowl";
+import { createLogger } from "@/server/logger";
+import { getAIConfig } from "@/config/server-config-loader";
+
+const log = createLogger("integrations-router");
 
 function maskToken(token: string): string {
   if (token.length <= 8) return "••••••••";
@@ -58,9 +62,6 @@ export const integrationsRouter = router({
       defaultHouseholdId: config.defaultHouseholdId,
       defaultShoppingListId: config.defaultShoppingListId,
       enabled: config.enabled,
-      enableNormalization: config.enableNormalization,
-      useAiNormalization: config.useAiNormalization,
-      normalizationModel: config.normalizationModel,
     };
   }),
 
@@ -72,9 +73,6 @@ export const integrationsRouter = router({
         apiToken: z.string().min(1, "API token is required"),
         defaultHouseholdId: z.number().optional(),
         defaultShoppingListId: z.number().optional(),
-        enableNormalization: z.boolean().optional(),
-        useAiNormalization: z.boolean().optional(),
-        normalizationModel: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -83,9 +81,6 @@ export const integrationsRouter = router({
         apiToken: input.apiToken,
         defaultHouseholdId: input.defaultHouseholdId,
         defaultShoppingListId: input.defaultShoppingListId,
-        enableNormalization: input.enableNormalization,
-        useAiNormalization: input.useAiNormalization,
-        normalizationModel: input.normalizationModel,
       });
       return { success: true };
     }),
@@ -150,6 +145,8 @@ export const integrationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      log.info({ recipeId: input.recipeId, servingMultiplier: input.servingMultiplier }, "sendToKitchenOwl: Starting");
+
       const config = await getKitchenOwlConfig(ctx.user.id);
       if (!config || !config.enabled) {
         throw new TRPCError({
@@ -157,6 +154,21 @@ export const integrationsRouter = router({
           message: "KitchenOwl integration not configured or disabled",
         });
       }
+
+      // Get AI config for normalization settings (server-wide)
+      const aiConfig = await getAIConfig();
+      const enableNormalization = aiConfig?.enableIngredientNormalization ?? true;
+      // AI normalization requires BOTH: global AI enabled AND useAiIngredientNormalization enabled
+      const aiGloballyEnabled = aiConfig?.enabled ?? false;
+      const useAiNormalization = aiGloballyEnabled && (aiConfig?.useAiIngredientNormalization ?? true);
+      const normalizationModel = aiConfig?.ingredientNormalizationModel;
+
+      log.info({
+        enableNormalization,
+        aiGloballyEnabled,
+        useAiNormalization,
+        normalizationModel,
+      }, "sendToKitchenOwl: AI config loaded");
 
       const shoppingListId = input.shoppingListId ?? config.defaultShoppingListId;
       if (!shoppingListId) {
@@ -174,6 +186,8 @@ export const integrationsRouter = router({
         });
       }
 
+      log.info({ recipeName: recipe.name, ingredientCount: recipe.recipeIngredients.length }, "sendToKitchenOwl: Recipe loaded");
+
       // Filter ingredients if specific IDs provided
       let ingredients = recipe.recipeIngredients;
       if (input.ingredientIds && input.ingredientIds.length > 0) {
@@ -181,17 +195,19 @@ export const integrationsRouter = router({
         ingredients = ingredients.filter(
           (ing) => ing.ingredientId !== null && idSet.has(ing.ingredientId)
         );
+        log.info({ filteredCount: ingredients.length }, "sendToKitchenOwl: Filtered to specific ingredients");
       }
 
       // Build items with normalization
       let items: ShoppingListItem[];
 
-      if (config.enableNormalization) {
+      if (enableNormalization) {
+        log.info("sendToKitchenOwl: Normalization enabled, processing ingredients");
         // Normalize ingredient names
         const ingredientNames = ingredients.map((ing) => ing.ingredientName);
         const normalizedMap = await normalizeIngredients(ingredientNames, {
-          useAi: config.useAiNormalization,
-          model: config.normalizationModel ?? undefined,
+          useAi: useAiNormalization,
+          model: normalizationModel ?? undefined,
         });
 
         items = ingredients.map((ing) => {
@@ -205,6 +221,7 @@ export const integrationsRouter = router({
           };
         });
       } else {
+        log.info("sendToKitchenOwl: Normalization disabled, using legacy format");
         // No normalization - send full ingredient strings (legacy behavior)
         items = ingredients.map((ing) => {
           const scaledAmount = ing.amount !== null
@@ -217,12 +234,16 @@ export const integrationsRouter = router({
         });
       }
 
+      log.info({ items }, "sendToKitchenOwl: Final items to send");
+
       const result = await addItemsToShoppingList(
         config.serverUrl,
         config.apiToken,
         shoppingListId,
         items
       );
+
+      log.info({ successCount: result.successCount, failCount: result.failCount }, "sendToKitchenOwl: Complete");
 
       return {
         successCount: result.successCount,

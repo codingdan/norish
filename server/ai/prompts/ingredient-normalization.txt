@@ -14,4 +14,4 @@ Examples:
 - "1 lb ground beef, 80/20" → "ground beef"
 - "chicken breast, boneless skinless" → "chicken breast"
 
-Return a JSON object mapping each input to its normalized name.
+Return a JSON object with a "mappings" array, where each element has "original" (the input ingredient) and "normalized" (the cleaned name).
