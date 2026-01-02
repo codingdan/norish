@@ -61,10 +61,8 @@ export async function saveMappings(mappings: MappingInput[]): Promise<void> {
 }
 
 export interface ListMappingsResult {
-  data: IngredientNameMapping[];
+  entries: IngredientNameMapping[];
   total: number;
-  page: number;
-  limit: number;
 }
 
 /**
@@ -96,10 +94,8 @@ export async function listMappings(
   ]);
 
   return {
-    data: mappings,
+    entries: mappings,
     total: totalResult[0]?.count ?? 0,
-    page,
-    limit,
   };
 }
 
