@@ -3,6 +3,7 @@
 import { Switch, Input } from "@heroui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useAdminSettingsContext } from "../context";
+import IngredientCacheTable from "./ingredient-cache-table";
 
 export default function IngredientNormalizationForm() {
   const { aiConfig, updateAIConfig } = useAdminSettingsContext();
@@ -89,7 +90,8 @@ export default function IngredientNormalizationForm() {
         )}
       </div>
 
-      <div className="border-t border-default-200 pt-4">
+      <div className="border-t border-default-200 pt-4 space-y-4">
+        <IngredientCacheTable />
         <p className="text-xs text-default-400">
           When AI normalization is disabled, a local regex-based fallback is
           used to strip quantities and modifiers from ingredient names.
