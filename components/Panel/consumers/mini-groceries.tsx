@@ -268,12 +268,7 @@ function MiniGroceriesContent({
           <Divider className="bg-default-200/40 my-2" />
           <div className="flex flex-col gap-2">
             {groceryTrackingEnabled && (
-              <Button
-                className="w-full"
-                color="primary"
-                size="sm"
-                onPress={handleAddToGroceries}
-              >
+              <Button className="w-full" color="primary" size="sm" onPress={handleAddToGroceries}>
                 Add to Groceries
               </Button>
             )}

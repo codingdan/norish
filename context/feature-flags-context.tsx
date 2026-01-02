@@ -18,11 +18,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     isLoading,
   };
 
-  return (
-    <FeatureFlagsContext.Provider value={value}>
-      {children}
-    </FeatureFlagsContext.Provider>
-  );
+  return <FeatureFlagsContext.Provider value={value}>{children}</FeatureFlagsContext.Provider>;
 }
 
 export function useFeatureFlags() {

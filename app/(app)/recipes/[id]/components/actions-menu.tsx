@@ -104,7 +104,17 @@ export default function ActionsMenu({ id }: Props) {
     }
 
     return items;
-  }, [canEdit, canDelete, handleDelete, id, router, isSupported, isActive, toggle, showGroceriesOption]);
+  }, [
+    canEdit,
+    canDelete,
+    handleDelete,
+    id,
+    router,
+    isSupported,
+    isActive,
+    toggle,
+    showGroceriesOption,
+  ]);
 
   return (
     <>

@@ -15,9 +15,7 @@ export type FeatureFlags = {
 export function useFeatureFlagsQuery() {
   const trpc = useTRPC();
 
-  const { data, isLoading, error } = useQuery(
-    trpc.featureFlags.getFeatureFlags.queryOptions()
-  );
+  const { data, isLoading, error } = useQuery(trpc.featureFlags.getFeatureFlags.queryOptions());
 
   return {
     flags: data ?? { groceryTrackingEnabled: true },
