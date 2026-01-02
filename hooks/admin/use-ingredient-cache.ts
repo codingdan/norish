@@ -3,14 +3,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/app/providers/trpc-provider";
 
+const PAGE_LIMIT = 20;
+
 export function useIngredientCache(page: number = 1, search?: string) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const queryKey = trpc.admin.ingredientCache.list.queryKey({ page, limit: 20, search });
-
   const { data, isLoading, error } = useQuery(
-    trpc.admin.ingredientCache.list.queryOptions({ page, limit: 20, search })
+    trpc.admin.ingredientCache.list.queryOptions({ page, limit: PAGE_LIMIT, search })
   );
 
   const invalidate = () => {
@@ -47,6 +47,8 @@ export function useIngredientCache(page: number = 1, search?: string) {
     delete: deleteMutation.mutateAsync,
     clear: clearMutation.mutateAsync,
     isAdding: addMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
     isClearing: clearMutation.isPending,
   };
 }
