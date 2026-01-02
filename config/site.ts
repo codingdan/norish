@@ -5,14 +5,17 @@ export const siteConfig = {
   description: "Nourish every meal.",
   navItems: [
     {
+      key: "home",
       label: "Home",
       href: "/",
     },
     {
+      key: "groceries",
       label: "Groceries",
       href: "/groceries",
     },
     {
+      key: "calendar",
       label: "Calendar",
       href: "/calendar",
     },

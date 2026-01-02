@@ -11,10 +11,20 @@ import NavbarUserMenu from "@/components/navbar/navbar-user-menu";
 import MobileNav from "@/components/navbar/mobile-nav";
 import logo from "@/public/norish-logo.png";
 import { useAutoHide } from "@/hooks/auto-hide";
+import { useFeatureFlags } from "@/context/feature-flags-context";
 
 export const Navbar = () => {
   const pathname = usePathname();
   const { isVisible, onHoverStart, onHoverEnd } = useAutoHide();
+  const { groceryTrackingEnabled } = useFeatureFlags();
+
+  // Filter nav items based on feature flags
+  const visibleNavItems = siteConfig.navItems.filter((item) => {
+    if (item.key === "groceries" && !groceryTrackingEnabled) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <>
@@ -51,7 +61,7 @@ export const Navbar = () => {
           {/* Center */}
           <NavbarContent justify="center">
             <ul className="ml-2 flex justify-start gap-3">
-              {siteConfig.navItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== "/" && pathname?.startsWith(item.href + "/"));
