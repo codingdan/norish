@@ -1,4 +1,4 @@
-import { eq, ilike, sql, count, desc, inArray } from "drizzle-orm";
+import { eq, ilike, count, desc, inArray } from "drizzle-orm";
 import { db } from "../drizzle";
 import {
   ingredientNameMappings,
@@ -50,7 +50,7 @@ export async function saveMappings(mappings: MappingInput[]): Promise<void> {
 
   const values: IngredientNameMappingInsert[] = mappings.map((m) => ({
     rawName: m.rawName.toLowerCase().trim(),
-    normalizedName: m.normalizedName,
+    normalizedName: m.normalizedName.trim(),
     source: m.source,
   }));
 
@@ -111,10 +111,14 @@ export async function addMapping(
     .insert(ingredientNameMappings)
     .values({
       rawName: rawName.toLowerCase().trim(),
-      normalizedName,
+      normalizedName: normalizedName.trim(),
       source: "manual",
     })
     .returning();
+
+  if (!created) {
+    throw new Error("Failed to create ingredient mapping");
+  }
 
   return created;
 }
