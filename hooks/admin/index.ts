@@ -3,3 +3,8 @@ export type { AdminConfigsData } from "./use-admin-query";
 
 export { useAdminMutations } from "./use-admin-mutations";
 export type { AdminMutationsResult } from "./use-admin-mutations";
+
+export {
+  useIngredientCacheQuery,
+  useIngredientCacheMutations,
+} from "./use-ingredient-cache";
