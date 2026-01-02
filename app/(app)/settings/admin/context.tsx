@@ -37,6 +37,7 @@ interface AdminSettingsContextValue {
   schedulerCleanupMonths: number | undefined;
   recipePermissionPolicy: RecipePermissionPolicy | undefined;
   prompts: PromptsConfig | undefined;
+  groceryTrackingEnabled: boolean | undefined;
 
   // Loading states
   isLoading: boolean;
@@ -66,6 +67,7 @@ interface AdminSettingsContextValue {
   updateRecipePermissionPolicy: (
     policy: RecipePermissionPolicy
   ) => Promise<{ success: boolean; error?: string }>;
+  updateGroceryTracking: (enabled: boolean) => Promise<{ success: boolean }>;
   restoreDefaultConfig: (key: string) => Promise<{ success: boolean; error?: string }>;
   testAuthProvider: (
     type: "oidc" | "github" | "google",
@@ -120,6 +122,9 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
     | RecipePermissionPolicy
     | undefined;
   const prompts = configs[ServerConfigKeys.PROMPTS] as PromptsConfig | undefined;
+  const groceryTrackingEnabled = configs[ServerConfigKeys.GROCERY_TRACKING_ENABLED] as
+    | boolean
+    | undefined;
 
   // Actions - wrap mutations
   const updateRegistration = useCallback(
@@ -220,6 +225,13 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
     [mutations]
   );
 
+  const updateGroceryTrackingAction = useCallback(
+    async (enabled: boolean) => {
+      return mutations.updateGroceryTracking(enabled);
+    },
+    [mutations]
+  );
+
   const restoreDefault = useCallback(
     async (key: string) => {
       return mutations.restoreDefault(key as ServerConfigKey);
@@ -270,6 +282,7 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
     schedulerCleanupMonths,
     recipePermissionPolicy,
     prompts,
+    groceryTrackingEnabled,
     isLoading,
     updateRegistration,
     updatePasswordAuth,
@@ -285,6 +298,7 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
     updatePrompts: updatePromptsConfig,
     updateSchedulerMonths: updateScheduler,
     updateRecipePermissionPolicy: updatePermissionPolicy,
+    updateGroceryTracking: updateGroceryTrackingAction,
     restoreDefaultConfig: restoreDefault,
     testAuthProvider: testAuth,
     testAIEndpoint: testAI,
