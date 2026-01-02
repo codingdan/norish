@@ -4,7 +4,6 @@ import Image from "next/image";
 
 import AuthorChip from "./components/author-chip";
 import { useRecipeContextRequired } from "./context";
-import SendToKitchenOwlButton from "./components/send-to-kitchenowl";
 
 import ActionsMenu from "@/app/(app)/recipes/[id]/components/actions-menu";
 import AddToGroceries from "@/app/(app)/recipes/[id]/components/add-to-groceries-button";
@@ -164,10 +163,7 @@ export default function RecipePageMobile() {
             </div>
 
             {/* Add to groceries button - below ingredients */}
-            <AddToGroceries recipeId={recipe.id} />
-
-            {/* Add to KitchenOwl button */}
-            <SendToKitchenOwlButton />
+            <AddToGroceries />
           </div>
 
           <Divider />
