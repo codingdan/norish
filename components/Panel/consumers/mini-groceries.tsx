@@ -9,6 +9,7 @@ import { useRecipeIngredients } from "@/hooks/recipes/use-recipe-ingredients";
 import { useGroceriesMutations } from "@/hooks/groceries";
 import { useKitchenOwlConfig, useSendToKitchenOwl } from "@/hooks/integrations";
 import Panel from "@/components/Panel/Panel";
+import { useFeatureFlags } from "@/context/feature-flags-context";
 
 type MiniGroceriesProps = {
   open: boolean;
@@ -30,6 +31,7 @@ function MiniGroceriesContent({
   const { isConfigured, isEnabled } = useKitchenOwlConfig();
   const { sendIngredients, isLoading: isKitchenOwlLoading } = useSendToKitchenOwl();
   const showKitchenOwl = isConfigured && isEnabled;
+  const { groceryTrackingEnabled } = useFeatureFlags();
 
   const { ingredients, isLoading } = useRecipeIngredients(recipeId);
   const { units } = useUnitsQuery();
@@ -265,14 +267,16 @@ function MiniGroceriesContent({
         <div className="mt-4">
           <Divider className="bg-default-200/40 my-2" />
           <div className="flex flex-col gap-2">
-            <Button
-              className="w-full"
-              color="primary"
-              size="sm"
-              onPress={handleAddToGroceries}
-            >
-              Add to Groceries
-            </Button>
+            {groceryTrackingEnabled && (
+              <Button
+                className="w-full"
+                color="primary"
+                size="sm"
+                onPress={handleAddToGroceries}
+              >
+                Add to Groceries
+              </Button>
+            )}
             {showKitchenOwl && (
               <Button
                 className="w-full"
