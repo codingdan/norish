@@ -82,6 +82,7 @@ export const PromptsConfigSchema = z.object({
   recipeExtraction: z.string(),
   unitConversion: z.string(),
   nutritionEstimation: z.string(),
+  ingredientNormalization: z.string(),
   isOverridden: z.boolean().default(false),
 });
 

@@ -1,13 +1,9 @@
-import { readFileSync } from "fs";
-import { join } from "path";
-
+import { loadPrompt } from "@/server/ai/prompts/loader";
 import { getAIProvider } from "@/server/ai/providers/factory";
 import { getCachedMappings, saveMappings, type MappingInput } from "@/server/db/repositories/ingredient-mappings";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("ingredient-normalizer");
-
-const PROMPT_PATH = join(process.cwd(), "server", "ai", "prompts", "ingredient-normalization.txt");
 
 interface NormalizationMapping {
   original: string;
@@ -86,7 +82,7 @@ export function localNormalize(ingredientName: string): string {
 async function aiNormalize(ingredients: string[]): Promise<Map<string, string> | null> {
   try {
     const provider = await getAIProvider();
-    const prompt = readFileSync(PROMPT_PATH, "utf-8");
+    const prompt = await loadPrompt("ingredient-normalization");
 
     const userPrompt = `Normalize these ingredients:\n${JSON.stringify(ingredients)}`;
 

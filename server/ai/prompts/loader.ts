@@ -16,11 +16,12 @@ export function loadDefaultPrompts(): PromptsConfigInput {
     recipeExtraction: readFileSync(join(PROMPTS_DIR, "recipe-extraction.txt"), "utf-8"),
     unitConversion: readFileSync(join(PROMPTS_DIR, "unit-conversion.txt"), "utf-8"),
     nutritionEstimation: readFileSync(join(PROMPTS_DIR, "nutrition-estimation.txt"), "utf-8"),
+    ingredientNormalization: readFileSync(join(PROMPTS_DIR, "ingredient-normalization.txt"), "utf-8"),
   };
 }
 
 export async function loadPrompt(
-  name: "recipe-extraction" | "unit-conversion" | "nutrition-estimation"
+  name: "recipe-extraction" | "unit-conversion" | "nutrition-estimation" | "ingredient-normalization"
 ): Promise<string> {
   const prompts = await getPrompts();
 
@@ -33,6 +34,9 @@ export async function loadPrompt(
 
     case "unit-conversion":
       return prompts.unitConversion;
+
+    case "ingredient-normalization":
+      return prompts.ingredientNormalization;
   }
 }
 
