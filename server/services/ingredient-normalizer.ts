@@ -2,6 +2,8 @@ import { loadPrompt } from "@/server/ai/prompts/loader";
 import { getAIProvider } from "@/server/ai/providers/factory";
 import { getCachedMappings, saveMappings, type MappingInput } from "@/server/db/repositories/ingredient-mappings";
 import { createLogger } from "@/server/logger";
+import { parseIngredientWithDefaults } from "@/lib/helpers";
+import { getUnits } from "@/config/server-config-loader";
 
 const log = createLogger("ingredient-normalizer");
 
@@ -51,25 +53,29 @@ export interface NormalizeOptions {
 }
 
 /**
- * Local fallback normalization using regex patterns.
+ * Local fallback normalization using parse-ingredient library.
+ * Uses the same parsing logic as the internal shopping list.
  * Applied when AI is unavailable or disabled.
  */
-export function localNormalize(ingredientName: string): string {
-  let name = ingredientName.trim();
+export async function localNormalize(ingredientName: string): Promise<string> {
+  const units = await getUnits();
+  const parsed = parseIngredientWithDefaults(ingredientName, units);
 
-  // 1. Strip parenthetical suffixes: "(diced)", "(to taste)", "(optional)"
-  name = name.replace(/\s*\([^)]*\)\s*$/, "");
+  // Get the description (ingredient name without qty/unit)
+  const description = parsed[0]?.description?.trim();
+
+  if (!description) {
+    return ingredientName.trim();
+  }
+
+  // Apply minimal cleanup on the description:
+  // 1. Strip parenthetical suffixes: "(diced)", "(optional)"
+  let name = description.replace(/\s*\([^)]*\)\s*$/, "");
 
   // 2. Strip trailing comma phrases: ", minced", ", for garnish"
   name = name.replace(/,\s*[^,]+$/, "");
 
-  // 3. Strip leading quantities: "2 cloves garlic" -> "garlic"
-  name = name.replace(
-    /^[\d./]+\s*(oz|lb|lbs|g|kg|ml|l|cups?|tbsp|tsp|cloves?|pieces?|slices?|heads?|stalks?|sprigs?|cans?|bunch|bunches)?\s*(of\s+)?/i,
-    ""
-  );
-
-  // 4. Trim and normalize whitespace
+  // 3. Normalize whitespace
   name = name.replace(/\s+/g, " ").trim();
 
   return name || ingredientName.trim();
@@ -193,7 +199,7 @@ export async function normalizeIngredients(
       });
     } else {
       // Use local fallback (don't cache)
-      normalized = localNormalize(ingredient);
+      normalized = await localNormalize(ingredient);
       source = "local";
     }
 
