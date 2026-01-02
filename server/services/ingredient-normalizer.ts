@@ -138,6 +138,17 @@ export async function normalizeIngredients(
     return result;
   }
 
+  // If AI is disabled, skip cache and use local fallback directly
+  if (!options.useAi) {
+    log.info("AI normalization disabled, using local fallback for all ingredients");
+    for (const ingredient of ingredients) {
+      const normalized = await localNormalize(ingredient);
+      log.debug({ original: ingredient, normalized, source: "local" }, "Normalized ingredient");
+      result.set(ingredient, normalized);
+    }
+    return result;
+  }
+
   // Normalize keys for cache lookup
   const normalizedKeys = ingredients.map((i) => i.toLowerCase().trim());
   const keyToOriginal = new Map<string, string>();
@@ -145,7 +156,7 @@ export async function normalizeIngredients(
     keyToOriginal.set(normalizedKeys[i], ingredients[i]);
   }
 
-  // Step 1: Check cache
+  // Step 1: Check cache (only when AI is enabled)
   const cached = await getCachedMappings(normalizedKeys);
   log.debug({ cachedCount: cached.size }, "Cache lookup complete");
 
@@ -169,17 +180,12 @@ export async function normalizeIngredients(
 
   log.debug({ uncachedCount: uncached.length, uncached }, "Ingredients not in cache");
 
-  // Step 2: Try AI normalization if enabled
+  // Step 2: Try AI normalization
+  log.info("Attempting AI normalization");
   let aiResults: Map<string, string> | null = null;
-
-  if (options.useAi) {
-    log.info("Attempting AI normalization");
-    aiResults = await aiNormalize(uncached);
-    if (aiResults) {
-      log.info({ aiResultCount: aiResults.size }, "AI normalization successful");
-    }
-  } else {
-    log.info("AI normalization disabled, using local fallback");
+  aiResults = await aiNormalize(uncached);
+  if (aiResults) {
+    log.info({ aiResultCount: aiResults.size }, "AI normalization successful");
   }
 
   // Step 3: Process results
