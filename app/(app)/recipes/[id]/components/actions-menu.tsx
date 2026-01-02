@@ -19,6 +19,8 @@ import { cssButtonPill } from "@/config/css-tokens";
 import { MiniGroceries, MiniCalendar } from "@/components/Panel/consumers";
 import { usePermissionsContext } from "@/context/permissions-context";
 import { useRecipesContext } from "@/context/recipes-context";
+import { useFeatureFlags } from "@/context/feature-flags-context";
+import { useKitchenOwlConfig } from "@/hooks/integrations";
 
 type Props = { id: string };
 
@@ -39,6 +41,9 @@ export default function ActionsMenu({ id }: Props) {
   const { deleteRecipe } = useRecipesContext();
   const { recipe } = useRecipeContextRequired();
   const { isSupported, isActive, toggle } = useWakeLockContext();
+  const { groceryTrackingEnabled } = useFeatureFlags();
+  const { isConfigured, isEnabled } = useKitchenOwlConfig();
+  const showGroceriesOption = groceryTrackingEnabled || (isConfigured && isEnabled);
 
   const canEdit = recipe.userId ? canEditRecipe(recipe.userId) : true;
   const canDelete = recipe.userId ? canDeleteRecipe(recipe.userId) : true;
@@ -56,13 +61,16 @@ export default function ActionsMenu({ id }: Props) {
         icon: <CalendarDaysIcon className="size-4" />,
         onPress: () => setOpenCalendar(true),
       },
-      {
+    ];
+
+    if (showGroceriesOption) {
+      items.push({
         key: "groceries",
         label: "Groceries",
         icon: <ShoppingCartIcon className="size-4" />,
         onPress: () => setOpenGroceries(true),
-      },
-    ];
+      });
+    }
 
     if (canEdit) {
       items.push({
@@ -96,7 +104,7 @@ export default function ActionsMenu({ id }: Props) {
     }
 
     return items;
-  }, [canEdit, canDelete, handleDelete, id, router, isSupported, isActive, toggle]);
+  }, [canEdit, canDelete, handleDelete, id, router, isSupported, isActive, toggle, showGroceriesOption]);
 
   return (
     <>
