@@ -3,6 +3,7 @@ import { z } from "zod";
 import { router } from "../../trpc";
 import { adminProcedure } from "../../middleware";
 
+import { trpcLogger as log } from "@/server/logger";
 import {
   listMappings,
   addMapping,
@@ -20,7 +21,8 @@ export const ingredientCacheRouter = router({
         search: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      log.debug({ userId: ctx.user.id, ...input }, "Listing ingredient cache mappings");
       return listMappings(input.page, input.limit, input.search);
     }),
 
@@ -31,9 +33,20 @@ export const ingredientCacheRouter = router({
         normalizedName: z.string().min(1),
       })
     )
-    .mutation(async ({ input }) => {
-      const entry = await addMapping(input.rawName, input.normalizedName);
-      return { success: true, entry };
+    .mutation(async ({ input, ctx }) => {
+      log.info(
+        { userId: ctx.user.id, rawName: input.rawName, normalizedName: input.normalizedName },
+        "Adding ingredient cache mapping"
+      );
+      try {
+        const entry = await addMapping(input.rawName, input.normalizedName);
+        return { success: true, entry };
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("duplicate key")) {
+          return { success: false, error: "Mapping already exists" };
+        }
+        throw error;
+      }
     }),
 
   update: adminProcedure
@@ -43,19 +56,22 @@ export const ingredientCacheRouter = router({
         normalizedName: z.string().min(1),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      log.info({ userId: ctx.user.id, id: input.id }, "Updating ingredient cache mapping");
       await updateMapping(input.id, input.normalizedName);
       return { success: true };
     }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      log.info({ userId: ctx.user.id, id: input.id }, "Deleting ingredient cache mapping");
       await deleteMapping(input.id);
       return { success: true };
     }),
 
-  clear: adminProcedure.mutation(async () => {
+  clear: adminProcedure.mutation(async ({ ctx }) => {
+    log.info({ userId: ctx.user.id }, "Clearing all ingredient cache mappings");
     const count = await clearAllMappings();
     return { success: true, count };
   }),
