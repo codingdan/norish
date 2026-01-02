@@ -18,6 +18,7 @@ export const ServerConfigKeys = {
   SCHEDULER_CLEANUP_MONTHS: "scheduler_cleanup_months",
   RECIPE_PERMISSION_POLICY: "recipe_permission_policy",
   PROMPTS: "prompts",
+  GROCERY_TRACKING_ENABLED: "grocery_tracking_enabled",
 } as const;
 
 export type ServerConfigKey = (typeof ServerConfigKeys)[keyof typeof ServerConfigKeys];
@@ -283,6 +284,8 @@ export function getSchemaForConfigKey(key: ServerConfigKey): z.ZodType {
       return RecipePermissionPolicySchema;
     case ServerConfigKeys.PROMPTS:
       return PromptsConfigSchema;
+    case ServerConfigKeys.GROCERY_TRACKING_ENABLED:
+      return z.boolean();
     default:
       return z.any();
   }
