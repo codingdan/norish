@@ -23,6 +23,7 @@ export const ingredientCacheRouter = router({
     )
     .query(async ({ input, ctx }) => {
       log.debug({ userId: ctx.user.id, ...input }, "Listing ingredient cache mappings");
+
       return listMappings(input.page, input.limit, input.search);
     }),
 
@@ -40,6 +41,7 @@ export const ingredientCacheRouter = router({
       );
       try {
         const entry = await addMapping(input.rawName, input.normalizedName);
+
         return { success: true, entry };
       } catch (error) {
         if (error instanceof Error && error.message.includes("duplicate key")) {
@@ -59,6 +61,7 @@ export const ingredientCacheRouter = router({
     .mutation(async ({ input, ctx }) => {
       log.info({ userId: ctx.user.id, id: input.id }, "Updating ingredient cache mapping");
       await updateMapping(input.id, input.normalizedName);
+
       return { success: true };
     }),
 
@@ -67,12 +70,14 @@ export const ingredientCacheRouter = router({
     .mutation(async ({ input, ctx }) => {
       log.info({ userId: ctx.user.id, id: input.id }, "Deleting ingredient cache mapping");
       await deleteMapping(input.id);
+
       return { success: true };
     }),
 
   clear: adminProcedure.mutation(async ({ ctx }) => {
     log.info({ userId: ctx.user.id }, "Clearing all ingredient cache mappings");
     const count = await clearAllMappings();
+
     return { success: true, count };
   }),
 });

@@ -1,4 +1,5 @@
 import { eq, ilike, count, desc, inArray } from "drizzle-orm";
+
 import { db } from "../drizzle";
 import {
   ingredientNameMappings,
@@ -32,6 +33,7 @@ export async function getCachedMappings(rawNames: string[]): Promise<Map<string,
   });
 
   const result = new Map<string, string>();
+
   for (const mapping of mappings) {
     result.set(mapping.rawName, mapping.normalizedName);
   }
@@ -54,10 +56,7 @@ export async function saveMappings(mappings: MappingInput[]): Promise<void> {
     source: m.source,
   }));
 
-  await db
-    .insert(ingredientNameMappings)
-    .values(values)
-    .onConflictDoNothing();
+  await db.insert(ingredientNameMappings).values(values).onConflictDoNothing();
 }
 
 export interface ListMappingsResult {
@@ -75,9 +74,7 @@ export async function listMappings(
 ): Promise<ListMappingsResult> {
   const offset = (page - 1) * limit;
 
-  const whereClause = search
-    ? ilike(ingredientNameMappings.rawName, `%${search}%`)
-    : undefined;
+  const whereClause = search ? ilike(ingredientNameMappings.rawName, `%${search}%`) : undefined;
 
   const [mappings, totalResult] = await Promise.all([
     db
@@ -87,10 +84,7 @@ export async function listMappings(
       .orderBy(desc(ingredientNameMappings.createdAt))
       .limit(limit)
       .offset(offset),
-    db
-      .select({ count: count() })
-      .from(ingredientNameMappings)
-      .where(whereClause),
+    db.select({ count: count() }).from(ingredientNameMappings).where(whereClause),
   ]);
 
   return {
@@ -155,5 +149,6 @@ export async function deleteMapping(id: string): Promise<void> {
  */
 export async function clearAllMappings(): Promise<number> {
   const result = await db.delete(ingredientNameMappings);
+
   return result.rowCount ?? 0;
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import type { IngredientNameMapping } from "@/server/db/schema/ingredient-mappings";
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -14,16 +16,9 @@ import {
   Pagination,
   Spinner,
 } from "@heroui/react";
-import {
-  PencilIcon,
-  TrashIcon,
-  CheckIcon,
-  XMarkIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 import { useIngredientCache } from "@/hooks/admin";
-import type { IngredientNameMapping } from "@/server/db/schema/ingredient-mappings";
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -36,6 +31,7 @@ function formatRelativeTime(date: Date): string {
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 30) return `${diffDays}d ago`;
+
   return date.toLocaleDateString();
 }
 
@@ -73,7 +69,6 @@ export default function IngredientCacheTable() {
     clear,
     isAdding,
     isUpdating,
-    isDeleting,
     isClearing,
   } = useIngredientCache(page, debouncedSearch || undefined);
 
@@ -83,10 +78,9 @@ export default function IngredientCacheTable() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearch(search);
-      if (search !== debouncedSearch) {
-        setPage(1);
-      }
+      setPage(1);
     }, 300);
+
     return () => clearTimeout(timeoutId);
   }, [search]);
 
@@ -147,8 +141,8 @@ export default function IngredientCacheTable() {
         </div>
         <div className="flex items-center gap-2">
           <Input
-            className="w-full sm:w-64"
             aria-label="Search ingredient mappings"
+            className="w-full sm:w-64"
             placeholder="Search mappings..."
             size="sm"
             value={search}
@@ -218,25 +212,20 @@ export default function IngredientCacheTable() {
               <TableCell>
                 {editingId === entry.id ? (
                   <Input
-                    autoFocus
                     size="sm"
                     value={editValue}
-                    onValueChange={setEditValue}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSaveEdit(entry.id);
                       if (e.key === "Escape") handleCancelEdit();
                     }}
+                    onValueChange={setEditValue}
                   />
                 ) : (
                   <span className="font-mono text-sm">{entry.normalizedName}</span>
                 )}
               </TableCell>
               <TableCell>
-                <Chip
-                  color={sourceColors[entry.source] || "default"}
-                  size="sm"
-                  variant="flat"
-                >
+                <Chip color={sourceColors[entry.source] || "default"} size="sm" variant="flat">
                   {entry.source}
                 </Chip>
               </TableCell>
@@ -308,13 +297,7 @@ export default function IngredientCacheTable() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-2 flex justify-center">
-          <Pagination
-            showControls
-            page={page}
-            size="sm"
-            total={totalPages}
-            onChange={setPage}
-          />
+          <Pagination showControls page={page} size="sm" total={totalPages} onChange={setPage} />
         </div>
       )}
     </div>
