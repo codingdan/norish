@@ -38,6 +38,7 @@ vi.mock("@/server/db/drizzle", () => ({
 vi.mock("@/server/auth/crypto", () => ({
   encrypt: vi.fn((val: string) => `encrypted:${val}`),
   decrypt: vi.fn((val: string) => val.replace("encrypted:", "")),
+  safeDecrypt: vi.fn((val: string) => val ? val.replace("encrypted:", "") : null),
 }));
 
 describe("integrations repository", () => {
@@ -82,7 +83,7 @@ describe("integrations repository", () => {
 
   it("decrypts token when retrieving integration", async () => {
     const { getKitchenOwlConfig } = await import("@/server/db/repositories/integrations");
-    const { decrypt } = await import("@/server/auth/crypto");
+    const { safeDecrypt } = await import("@/server/auth/crypto");
 
     mockFindFirst.mockResolvedValue({
       id: "int-1",
@@ -93,13 +94,16 @@ describe("integrations repository", () => {
       defaultHouseholdId: 1,
       defaultShoppingListId: 1,
       enabled: true,
+      enableNormalization: true,
+      useAiNormalization: true,
+      normalizationModel: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
     const result = await getKitchenOwlConfig("user-123");
 
-    expect(decrypt).toHaveBeenCalledWith("encrypted:secret-token");
+    expect(safeDecrypt).toHaveBeenCalledWith("encrypted:secret-token");
     expect(result?.apiToken).toBe("secret-token");
   });
 });

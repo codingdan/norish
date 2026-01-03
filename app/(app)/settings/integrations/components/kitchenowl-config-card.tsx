@@ -40,13 +40,16 @@ import type {
   KitchenOwlShoppingList,
 } from "@/lib/integrations/kitchenowl";
 import { useTRPC } from "@/app/providers/trpc-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 export default function KitchenOwlConfigCard() {
   const { config, isLoading, isConfigured, isEnabled } = useKitchenOwlConfig();
   const { saveConfig, deleteConfig, testConnection } =
     useKitchenOwlMutations();
   const trpc = useTRPC();
+  const getShoppingListsMutation = useMutation(
+    trpc.integrations.getShoppingListsWithCredentials.mutationOptions()
+  );
   const deleteModal = useDisclosure();
 
   // Form state
@@ -68,18 +71,24 @@ export default function KitchenOwlConfigCard() {
     message: string;
   } | null>(null);
 
-  // Query for shopping lists when household is selected (works for both new setup and editing)
-  // Pass credentials during initial setup (before config is saved)
+  // Query for shopping lists when configured (saved credentials)
   const shoppingListsQuery = useQuery({
     ...trpc.integrations.getShoppingLists.queryOptions({
       householdId: selectedHouseholdId!,
-      // Include credentials for initial setup when not yet configured
-      ...(households.length > 0 && !isConfigured && serverUrl && apiToken
-        ? { serverUrl, apiToken }
-        : {}),
     }),
-    enabled: !!selectedHouseholdId && (isConfigured || households.length > 0),
+    enabled: !!selectedHouseholdId && isConfigured,
   });
+
+  // For initial setup, fetch shopping lists via mutation when household selected
+  useEffect(() => {
+    if (selectedHouseholdId && !isConfigured && households.length > 0 && serverUrl && apiToken) {
+      getShoppingListsMutation.mutate({
+        householdId: selectedHouseholdId,
+        serverUrl,
+        apiToken,
+      });
+    }
+  }, [selectedHouseholdId, isConfigured, households.length, serverUrl, apiToken, getShoppingListsMutation]);
 
   // Initialize form with existing config
   useEffect(() => {
@@ -478,7 +487,7 @@ export default function KitchenOwlConfigCard() {
             {selectedHouseholdId && (isConfigured || households.length > 0) && (
               <Select
                 description="Select a default shopping list for recipe ingredients"
-                isLoading={shoppingListsQuery.isLoading}
+                isLoading={isConfigured ? shoppingListsQuery.isLoading : getShoppingListsMutation.isPending}
                 label="Default Shopping List"
                 placeholder="Select a shopping list"
                 selectedKeys={
@@ -493,7 +502,7 @@ export default function KitchenOwlConfigCard() {
                   );
                 }}
               >
-                {(shoppingListsQuery.data || []).map(
+                {(isConfigured ? shoppingListsQuery.data || [] : getShoppingListsMutation.data || []).map(
                   (list: KitchenOwlShoppingList) => (
                     <SelectItem key={String(list.id)}>{list.name}</SelectItem>
                   )

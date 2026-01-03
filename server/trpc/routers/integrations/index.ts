@@ -134,6 +134,20 @@ export const integrationsRouter = router({
       return getShoppingLists(serverUrl, apiToken, input.householdId);
     }),
 
+  // Get shopping lists with explicit credentials (for initial setup)
+  // Uses mutation to avoid credentials in query params
+  getShoppingListsWithCredentials: authedProcedure
+    .input(
+      z.object({
+        householdId: z.number(),
+        serverUrl: z.string().url(),
+        apiToken: z.string().min(1),
+      })
+    )
+    .mutation(async ({ input }): Promise<KitchenOwlShoppingList[]> => {
+      return getShoppingLists(input.serverUrl, input.apiToken, input.householdId);
+    }),
+
   // Send recipe ingredients to KitchenOwl
   sendToKitchenOwl: authedProcedure
     .input(
