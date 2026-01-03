@@ -45,6 +45,7 @@ async function fetchWithTimeout(
       ...options,
       signal: controller.signal,
     });
+
     return response;
   } finally {
     clearTimeout(timeoutId);
@@ -60,6 +61,16 @@ function buildHeaders(token: string): HeadersInit {
 
 function normalizeUrl(serverUrl: string): string {
   return serverUrl.replace(/\/+$/, "");
+}
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+
+  return chunks;
 }
 
 export async function testConnection(
@@ -82,11 +93,13 @@ export async function testConnection(
     }
 
     const households = (await response.json()) as KitchenOwlHousehold[];
+
     return { success: true, households };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return { success: false, error: "Connection timed out after 10 seconds" };
     }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -124,6 +137,7 @@ export async function addItemToShoppingList(
 
   try {
     const body: { name: string; description?: string } = { name: itemName };
+
     if (description) {
       body.description = description;
     }
@@ -150,6 +164,9 @@ export async function addItemToShoppingList(
   }
 }
 
+const BATCH_SIZE = 5;
+const BATCH_DELAY_MS = 100;
+
 export async function addItemsToShoppingList(
   serverUrl: string,
   apiToken: string,
@@ -160,23 +177,32 @@ export async function addItemsToShoppingList(
   let failCount = 0;
   const errors: string[] = [];
 
-  for (const item of items) {
-    const result = await addItemToShoppingList(
-      serverUrl,
-      apiToken,
-      shoppingListId,
-      item.name,
-      item.description
+  const chunks = chunkArray(items, BATCH_SIZE);
+
+  for (const chunk of chunks) {
+    const results = await Promise.all(
+      chunk.map((item) =>
+        addItemToShoppingList(serverUrl, apiToken, shoppingListId, item.name, item.description)
+      )
     );
-    if (result.success) {
-      successCount++;
-    } else {
-      failCount++;
-      if (result.error) {
-        errors.push(`${item.name}: ${result.error}`);
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+        if (result.error) {
+          errors.push(`${chunk[i].name}: ${result.error}`);
+        }
       }
     }
-    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Small delay between batches to avoid overwhelming the server
+    if (chunks.indexOf(chunk) < chunks.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+    }
   }
 
   return { successCount, failCount, errors };
