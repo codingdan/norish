@@ -15,7 +15,11 @@ export type FeatureFlags = {
 export function useFeatureFlagsQuery() {
   const trpc = useTRPC();
 
-  const { data, isLoading, error } = useQuery(trpc.featureFlags.getFeatureFlags.queryOptions());
+  const { data, isLoading, error } = useQuery({
+    ...trpc.featureFlags.getFeatureFlags.queryOptions(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - flags don't change often
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  });
 
   return {
     flags: data ?? { groceryTrackingEnabled: true },
