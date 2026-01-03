@@ -51,6 +51,6 @@ export function safeDecrypt(value: string | null | undefined): string | null {
   try {
     return decrypt(value);
   } catch {
-    return value;
+    return null;
   }
 }

@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../drizzle";
 import { integrations, type Integration } from "../schema";
-import { encrypt, decrypt } from "@/server/auth/crypto";
+import { encrypt, decrypt, safeDecrypt } from "@/server/auth/crypto";
 
 export interface KitchenOwlConfig {
   serverUrl: string;
@@ -36,9 +36,15 @@ export async function getKitchenOwlConfig(userId: string): Promise<KitchenOwlCon
     return null;
   }
 
+  const apiToken = safeDecrypt(integration.encryptedToken);
+  if (!apiToken) {
+    // Token decryption failed - treat as unconfigured
+    return null;
+  }
+
   return {
     serverUrl: integration.serverUrl,
-    apiToken: decrypt(integration.encryptedToken),
+    apiToken,
     defaultHouseholdId: integration.defaultHouseholdId,
     defaultShoppingListId: integration.defaultShoppingListId,
     enabled: integration.enabled,
