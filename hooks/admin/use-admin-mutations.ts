@@ -145,9 +145,18 @@ export function useAdminMutations(): AdminMutationsResult {
       return withInvalidate(updatePasswordAuthMutation.mutateAsync(enabled));
     },
 
-    // Grocery tracking
+    // Grocery tracking - also invalidate feature flags since UI components depend on it
     updateGroceryTracking: async (enabled) => {
-      return withInvalidate(updateGroceryTrackingMutation.mutateAsync(enabled));
+      const result = await withInvalidate(updateGroceryTrackingMutation.mutateAsync(enabled));
+
+      if (result.success) {
+        // Invalidate feature flags query so navbar/buttons update immediately
+        await queryClient.invalidateQueries({
+          queryKey: trpc.featureFlags.getFeatureFlags.queryKey(),
+        });
+      }
+
+      return result;
     },
 
     // Auth providers
