@@ -7,6 +7,14 @@ import {
   type IngredientNameMappingInsert,
 } from "../schema";
 
+/**
+ * Escape special characters in LIKE patterns to prevent injection.
+ * Escapes: % _ \
+ */
+export function escapeLikePattern(search: string): string {
+  return search.replace(/[%_\\]/g, "\\$&");
+}
+
 export type MappingSource = "ai" | "fallback" | "manual";
 
 export type { IngredientNameMapping };
@@ -74,7 +82,9 @@ export async function listMappings(
 ): Promise<ListMappingsResult> {
   const offset = (page - 1) * limit;
 
-  const whereClause = search ? ilike(ingredientNameMappings.rawName, `%${search}%`) : undefined;
+  const whereClause = search
+    ? ilike(ingredientNameMappings.rawName, `%${escapeLikePattern(search)}%`)
+    : undefined;
 
   const [mappings, totalResult] = await Promise.all([
     db
