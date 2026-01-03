@@ -4,6 +4,7 @@ import { getCachedMappings, saveMappings, type MappingInput } from "@/server/db/
 import { createLogger } from "@/server/logger";
 import { parseIngredientWithDefaults } from "@/lib/helpers";
 import { getUnits } from "@/config/server-config-loader";
+import { getAINormalizationLimiter } from "@/server/utils/rate-limiter";
 
 const log = createLogger("ingredient-normalizer");
 
@@ -86,6 +87,13 @@ export async function localNormalize(ingredientName: string): Promise<string> {
  * Falls back to local normalization if AI fails.
  */
 async function aiNormalize(ingredients: string[]): Promise<Map<string, string> | null> {
+  // Check rate limit before making AI call
+  const limiter = getAINormalizationLimiter();
+  if (!limiter.tryConsume()) {
+    log.warn("AI normalization rate limited, falling back to local");
+    return null;
+  }
+
   try {
     const provider = await getAIProvider();
     const prompt = await loadPrompt("ingredient-normalization");
