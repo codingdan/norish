@@ -46,6 +46,7 @@ function MiniGroceriesContent({
       ingredientName: string;
       amount?: string | null;
       unit?: string | null;
+      order: number;
     }[]
   >([]);
 
@@ -72,6 +73,7 @@ function MiniGroceriesContent({
           ingredientName: i.ingredientName,
           amount: i.amount?.toString() ?? null,
           unit: i.unit,
+          order: i.order,
         }))
       );
     }
@@ -209,7 +211,7 @@ function MiniGroceriesContent({
 
             return (
               <div
-                key={item.ingredientId}
+                key={item.order}
                 className="flex cursor-pointer items-start px-2 py-2"
                 role="button"
                 tabIndex={0}
