@@ -234,7 +234,7 @@ export const integrationsRouter = router({
         });
       }
 
-      log.info({ items }, "sendToKitchenOwl: Final items to send");
+      log.info({ itemCount: items.length }, "sendToKitchenOwl: Final items prepared");
 
       const result = await addItemsToShoppingList(
         config.serverUrl,
