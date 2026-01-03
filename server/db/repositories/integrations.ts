@@ -2,6 +2,9 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../drizzle";
 import { integrations, type Integration } from "../schema";
 import { encrypt, decrypt, safeDecrypt } from "@/server/auth/crypto";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("integrations-repo");
 
 export interface KitchenOwlConfig {
   serverUrl: string;
@@ -38,7 +41,10 @@ export async function getKitchenOwlConfig(userId: string): Promise<KitchenOwlCon
 
   const apiToken = safeDecrypt(integration.encryptedToken);
   if (!apiToken) {
-    // Token decryption failed - treat as unconfigured
+    log.warn(
+      { userId, integrationId: integration.id },
+      "Token decryption failed - integration will appear unconfigured. This may indicate key rotation or data corruption."
+    );
     return null;
   }
 
