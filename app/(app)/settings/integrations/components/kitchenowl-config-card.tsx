@@ -88,7 +88,8 @@ export default function KitchenOwlConfigCard() {
         apiToken,
       });
     }
-  }, [selectedHouseholdId, isConfigured, households.length, serverUrl, apiToken, getShoppingListsMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutation object is stable, only trigger on input changes
+  }, [selectedHouseholdId, isConfigured, households.length, serverUrl, apiToken]);
 
   // Initialize form with existing config
   useEffect(() => {
