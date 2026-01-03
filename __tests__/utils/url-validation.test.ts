@@ -39,6 +39,22 @@ describe("isPrivateUrl", () => {
     expect(isPrivateUrl("http://[::1]:8080")).toBe(true);
   });
 
+  it("detects 0.0.0.0", () => {
+    expect(isPrivateUrl("http://0.0.0.0:8080")).toBe(true);
+  });
+
+  it("detects IPv4-mapped IPv6 addresses", () => {
+    expect(isPrivateUrl("http://[::ffff:127.0.0.1]")).toBe(true);
+    expect(isPrivateUrl("http://[::ffff:192.168.1.1]")).toBe(true);
+    expect(isPrivateUrl("http://[::ffff:10.0.0.1]")).toBe(true);
+  });
+
+  it("detects IPv6 private ranges", () => {
+    expect(isPrivateUrl("http://[fe80::1]")).toBe(true); // Link-local
+    expect(isPrivateUrl("http://[fd00::1]")).toBe(true); // Unique local
+    expect(isPrivateUrl("http://[fc00::1]")).toBe(true); // Unique local
+  });
+
   it("detects .local, .internal, .localhost TLDs", () => {
     expect(isPrivateUrl("http://myserver.local")).toBe(true);
     expect(isPrivateUrl("http://api.internal")).toBe(true);

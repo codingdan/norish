@@ -6,6 +6,8 @@ const PRIVATE_IP_PATTERNS = [
   // Localhost
   /^localhost$/i,
   /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+  // 0.0.0.0 (binds to all interfaces)
+  /^0\.0\.0\.0$/,
   // 10.x.x.x
   /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
   // 172.16.0.0 - 172.31.255.255
@@ -14,8 +16,22 @@ const PRIVATE_IP_PATTERNS = [
   /^192\.168\.\d{1,3}\.\d{1,3}$/,
   // 169.254.x.x (link-local, includes AWS metadata endpoint)
   /^169\.254\.\d{1,3}\.\d{1,3}$/,
-  // IPv6 localhost
-  /^\[?::1\]?$/,
+];
+
+// IPv6 patterns that indicate private/internal addresses
+const PRIVATE_IPV6_PATTERNS = [
+  // Loopback
+  /^::1$/,
+  /^\[::1\]$/,
+  // Link-local (fe80::/10)
+  /^fe[89ab][0-9a-f]:/i,
+  /^\[fe[89ab][0-9a-f]:/i,
+  // Unique local (fc00::/7 - includes fd00::/8)
+  /^f[cd][0-9a-f]{2}:/i,
+  /^\[f[cd][0-9a-f]{2}:/i,
+  // IPv4-mapped IPv6 (::ffff:x.x.x.x)
+  /^::ffff:/i,
+  /^\[::ffff:/i,
 ];
 
 /**
@@ -26,8 +42,15 @@ export function isPrivateUrl(urlString: string): boolean {
     const url = new URL(urlString);
     const hostname = url.hostname.toLowerCase();
 
-    // Check against known private patterns
+    // Check against IPv4 private patterns
     for (const pattern of PRIVATE_IP_PATTERNS) {
+      if (pattern.test(hostname)) {
+        return true;
+      }
+    }
+
+    // Check against IPv6 private patterns
+    for (const pattern of PRIVATE_IPV6_PATTERNS) {
       if (pattern.test(hostname)) {
         return true;
       }
@@ -52,6 +75,10 @@ export function isPrivateUrl(urlString: string): boolean {
 /**
  * Validate that a URL is a valid, public URL.
  * Throws an error if the URL is invalid or points to private/internal addresses.
+ *
+ * Note: This provides string-based validation only. DNS rebinding attacks
+ * (e.g., using nip.io) are not detected. For maximum security, also validate
+ * resolved IP addresses at the HTTP client level.
  */
 export function validatePublicUrl(urlString: string): string {
   // This will throw if invalid

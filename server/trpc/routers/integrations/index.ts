@@ -131,7 +131,17 @@ export const integrationsRouter = router({
     .input(
       z.object({
         householdId: z.number(),
-        serverUrl: z.string().url().optional(),
+        serverUrl: z.string().url().refine(
+          (url) => {
+            try {
+              validatePublicUrl(url);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: "Server URL cannot point to private or internal addresses" }
+        ).optional(),
         apiToken: z.string().min(1).optional(),
       })
     )
@@ -161,7 +171,17 @@ export const integrationsRouter = router({
     .input(
       z.object({
         householdId: z.number(),
-        serverUrl: z.string().url(),
+        serverUrl: z.string().url().refine(
+          (url) => {
+            try {
+              validatePublicUrl(url);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: "Server URL cannot point to private or internal addresses" }
+        ),
         apiToken: z.string().min(1),
       })
     )
