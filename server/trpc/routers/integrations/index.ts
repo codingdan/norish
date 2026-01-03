@@ -18,6 +18,7 @@ import { normalizeIngredients } from "@/server/services/ingredient-normalizer";
 import type { ShoppingListItem } from "@/lib/integrations/kitchenowl";
 import { createLogger } from "@/server/logger";
 import { getAIConfig } from "@/config/server-config-loader";
+import { validatePublicUrl } from "@/lib/utils/url-validation";
 
 const log = createLogger("integrations-router");
 
@@ -69,7 +70,17 @@ export const integrationsRouter = router({
   saveKitchenOwlConfig: authedProcedure
     .input(
       z.object({
-        serverUrl: z.string().url("Invalid server URL"),
+        serverUrl: z.string().url("Invalid server URL").refine(
+          (url) => {
+            try {
+              validatePublicUrl(url);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: "Server URL cannot point to private or internal addresses" }
+        ),
         apiToken: z.string().min(1, "API token is required"),
         defaultHouseholdId: z.number().optional(),
         defaultShoppingListId: z.number().optional(),
@@ -95,7 +106,17 @@ export const integrationsRouter = router({
   testKitchenOwlConnection: authedProcedure
     .input(
       z.object({
-        serverUrl: z.string().url(),
+        serverUrl: z.string().url().refine(
+          (url) => {
+            try {
+              validatePublicUrl(url);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: "Server URL cannot point to private or internal addresses" }
+        ),
         apiToken: z.string().min(1),
       })
     )
