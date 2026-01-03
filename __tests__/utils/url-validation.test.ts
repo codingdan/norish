@@ -39,6 +39,13 @@ describe("isPrivateUrl", () => {
     expect(isPrivateUrl("http://[::1]:8080")).toBe(true);
   });
 
+  it("detects .local, .internal, .localhost TLDs", () => {
+    expect(isPrivateUrl("http://myserver.local")).toBe(true);
+    expect(isPrivateUrl("http://api.internal")).toBe(true);
+    expect(isPrivateUrl("http://test.localhost")).toBe(true);
+    expect(isPrivateUrl("http://sub.domain.local")).toBe(true);
+  });
+
   it("allows public URLs", () => {
     expect(isPrivateUrl("https://kitchenowl.example.com")).toBe(false);
     expect(isPrivateUrl("https://api.kitchenowl.org")).toBe(false);
