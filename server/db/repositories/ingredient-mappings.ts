@@ -27,23 +27,38 @@ export interface MappingInput {
 
 /**
  * Get cached mappings for a list of raw ingredient names.
- * Returns a Map of rawName -> normalizedName for found entries.
+ * Returns a Map of originalInput -> normalizedName for found entries.
+ * Keys are preserved in original case for caller convenience.
  */
 export async function getCachedMappings(rawNames: string[]): Promise<Map<string, string>> {
   if (rawNames.length === 0) {
     return new Map();
   }
 
-  const normalizedRawNames = rawNames.map((n) => n.toLowerCase().trim());
+  // Build a map from normalized key -> original input(s)
+  const keyToOriginals = new Map<string, string[]>();
+  for (const rawName of rawNames) {
+    const key = rawName.toLowerCase().trim();
+    const existing = keyToOriginals.get(key) ?? [];
+    existing.push(rawName);
+    keyToOriginals.set(key, existing);
+  }
+
+  const normalizedKeys = Array.from(keyToOriginals.keys());
 
   const mappings = await db.query.ingredientNameMappings.findMany({
-    where: inArray(ingredientNameMappings.rawName, normalizedRawNames),
+    where: inArray(ingredientNameMappings.rawName, normalizedKeys),
   });
 
+  // Map results back to original input keys
   const result = new Map<string, string>();
-
   for (const mapping of mappings) {
-    result.set(mapping.rawName, mapping.normalizedName);
+    const originals = keyToOriginals.get(mapping.rawName);
+    if (originals) {
+      for (const original of originals) {
+        result.set(original, mapping.normalizedName);
+      }
+    }
   }
 
   return result;

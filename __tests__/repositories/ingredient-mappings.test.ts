@@ -56,6 +56,20 @@ describe("ingredient-mappings repository", () => {
       expect(result.size).toBe(0);
       expect(result).toBeInstanceOf(Map);
     });
+
+    it("returns mappings keyed by original input case", async () => {
+      mockFindMany.mockResolvedValueOnce([
+        { id: "1", rawName: "onion (diced)", normalizedName: "onion", source: "ai", createdAt: new Date(), updatedAt: new Date() },
+      ]);
+
+      const { getCachedMappings } = await import("@/server/db/repositories/ingredient-mappings");
+      // Query with mixed case - should still find the lowercase entry
+      const result = await getCachedMappings(["Onion (Diced)", "GARLIC"]);
+
+      // Should be keyed by original input, not db value
+      expect(result.get("Onion (Diced)")).toBe("onion");
+      expect(result.has("onion (diced)")).toBe(false); // DB key should not be exposed
+    });
   });
 
   describe("saveMappings", () => {
