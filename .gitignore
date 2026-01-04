@@ -54,3 +54,6 @@ docker-compose.yml
 
 # Windows installer binaries
 *.msi
+
+# local-only documents
+/.local
