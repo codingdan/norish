@@ -7,6 +7,8 @@ import { contentConfigProcedures } from "./content-config";
 import { aiVideoProcedures } from "./ai-video";
 import { permissionsProcedures } from "./permissions";
 import { systemProcedures } from "./system";
+import { ingredientCacheRouter } from "./ingredient-cache";
+import { groceryTrackingProcedures } from "./grocery-tracking";
 
 export const adminRouter = router({
   // Config queries
@@ -14,6 +16,9 @@ export const adminRouter = router({
 
   // Registration
   ...registrationProcedures._def.procedures,
+
+  // Grocery tracking
+  ...groceryTrackingProcedures._def.procedures,
 
   // Auth providers
   auth: authProvidersProcedures,
@@ -29,4 +34,7 @@ export const adminRouter = router({
 
   // System (scheduler, restart, restore)
   ...systemProcedures._def.procedures,
+
+  // Ingredient cache management
+  ingredientCache: ingredientCacheRouter,
 });

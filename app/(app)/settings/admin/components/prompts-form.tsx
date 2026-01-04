@@ -14,6 +14,7 @@ export default function PromptsForm() {
   const [recipeExtraction, setRecipeExtraction] = useState("");
   const [unitConversion, setUnitConversion] = useState("");
   const [nutritionEstimation, setNutritionEstimation] = useState("");
+  const [ingredientNormalization, setIngredientNormalization] = useState("");
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -24,6 +25,7 @@ export default function PromptsForm() {
       setRecipeExtraction(prompts.recipeExtraction);
       setUnitConversion(prompts.unitConversion);
       setNutritionEstimation(prompts.nutritionEstimation);
+      setIngredientNormalization(prompts.ingredientNormalization);
     }
   }, [prompts]);
 
@@ -33,11 +35,12 @@ export default function PromptsForm() {
       const changed =
         recipeExtraction !== prompts.recipeExtraction ||
         unitConversion !== prompts.unitConversion ||
-        nutritionEstimation !== prompts.nutritionEstimation;
+        nutritionEstimation !== prompts.nutritionEstimation ||
+        ingredientNormalization !== prompts.ingredientNormalization;
 
       setHasChanges(changed);
     }
-  }, [recipeExtraction, unitConversion, nutritionEstimation, prompts]);
+  }, [recipeExtraction, unitConversion, nutritionEstimation, ingredientNormalization, prompts]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -45,6 +48,7 @@ export default function PromptsForm() {
       recipeExtraction,
       unitConversion,
       nutritionEstimation,
+      ingredientNormalization,
     }).finally(() => {
       setSaving(false);
     });
@@ -102,6 +106,18 @@ export default function PromptsForm() {
           placeholder="Enter the nutrition estimation prompt..."
           value={nutritionEstimation}
           onValueChange={setNutritionEstimation}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Textarea
+          description="This prompt is used when normalizing ingredient names for shopping list integrations."
+          label="Ingredient Normalization Prompt"
+          maxRows={15}
+          minRows={6}
+          placeholder="Enter the ingredient normalization prompt..."
+          value={ingredientNormalization}
+          onValueChange={setIngredientNormalization}
         />
       </div>
 

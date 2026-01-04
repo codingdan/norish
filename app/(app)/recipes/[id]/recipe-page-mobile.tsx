@@ -163,7 +163,7 @@ export default function RecipePageMobile() {
             </div>
 
             {/* Add to groceries button - below ingredients */}
-            <AddToGroceries recipeId={recipe.id} />
+            <AddToGroceries />
           </div>
 
           <Divider />

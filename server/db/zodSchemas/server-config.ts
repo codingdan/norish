@@ -18,6 +18,7 @@ export const ServerConfigKeys = {
   SCHEDULER_CLEANUP_MONTHS: "scheduler_cleanup_months",
   RECIPE_PERMISSION_POLICY: "recipe_permission_policy",
   PROMPTS: "prompts",
+  GROCERY_TRACKING_ENABLED: "grocery_tracking_enabled",
 } as const;
 
 export type ServerConfigKey = (typeof ServerConfigKeys)[keyof typeof ServerConfigKeys];
@@ -82,6 +83,7 @@ export const PromptsConfigSchema = z.object({
   recipeExtraction: z.string(),
   unitConversion: z.string(),
   nutritionEstimation: z.string(),
+  ingredientNormalization: z.string(),
   isOverridden: z.boolean().default(false),
 });
 
@@ -151,6 +153,10 @@ export const AIConfigSchema = z.object({
   maxTokens: z.number().int().positive(),
   autoTagAllergies: z.boolean().default(true),
   alwaysUseAI: z.boolean().default(false),
+  // Ingredient normalization settings
+  enableIngredientNormalization: z.boolean().default(true),
+  useAiIngredientNormalization: z.boolean().default(true),
+  ingredientNormalizationModel: z.string().optional(), // Override model for normalization
 });
 
 export type AIConfig = z.infer<typeof AIConfigSchema>;
@@ -278,6 +284,8 @@ export function getSchemaForConfigKey(key: ServerConfigKey): z.ZodType {
       return RecipePermissionPolicySchema;
     case ServerConfigKeys.PROMPTS:
       return PromptsConfigSchema;
+    case ServerConfigKeys.GROCERY_TRACKING_ENABLED:
+      return z.boolean();
     default:
       return z.any();
   }

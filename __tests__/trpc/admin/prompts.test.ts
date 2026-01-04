@@ -10,6 +10,7 @@ vi.mock("@/server/ai/prompts/loader", () => ({
     recipeExtraction: "Default recipe extraction prompt",
     unitConversion: "Default unit conversion prompt",
     nutritionEstimation: "Default nutrition estimation prompt",
+    ingredientNormalization: "Default ingredient normalization prompt",
   }),
 }));
 
@@ -74,6 +75,7 @@ describe("prompts procedures", () => {
         recipeExtraction: "Custom extraction prompt",
         unitConversion: "Custom conversion prompt",
         nutritionEstimation: "Custom nutrition estimation prompt",
+        ingredientNormalization: "Custom ingredient normalization prompt",
         isOverridden: true,
       };
 
@@ -102,6 +104,7 @@ describe("prompts procedures", () => {
         recipeExtraction: "Default recipe extraction prompt",
         unitConversion: "Default unit conversion prompt",
         nutritionEstimation: "Default nutrition estimation prompt",
+        ingredientNormalization: "Default ingredient normalization prompt",
       };
 
       getConfig.mockResolvedValue(null);
@@ -146,6 +149,7 @@ describe("prompts procedures", () => {
         recipeExtraction: "Updated extraction prompt",
         unitConversion: "Updated conversion prompt",
         nutritionEstimation: "Updated nutrition estimation prompt",
+        ingredientNormalization: "Updated ingredient normalization prompt",
       };
 
       setConfig.mockResolvedValue(undefined);
@@ -183,6 +187,7 @@ describe("prompts procedures", () => {
         recipeExtraction: "Updated extraction prompt",
         unitConversion: "Updated conversion prompt",
         nutritionEstimation: "Updated nutrition estimation prompt",
+        ingredientNormalization: "Updated ingredient normalization prompt",
       };
 
       const testRouter = t.router({
@@ -239,6 +244,7 @@ describe("prompts procedures", () => {
         recipeExtraction: "Default recipe extraction prompt",
         unitConversion: "Default unit conversion prompt",
         nutritionEstimation: "Default nutrition estimation prompt",
+        ingredientNormalization: "Default ingredient normalization prompt",
       };
 
       (loadDefaultPrompts as any).mockReturnValue(defaultPrompts);

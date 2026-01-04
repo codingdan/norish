@@ -140,7 +140,7 @@ export default function RecipePageDesktop() {
               <IngredientsList />
 
               {/* Add to groceries button */}
-              <AddToGroceries recipeId={recipe.id} />
+              <AddToGroceries />
             </CardBody>
           </Card>
 

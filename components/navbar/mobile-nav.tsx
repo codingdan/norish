@@ -25,6 +25,7 @@ import { cssGlassBackdrop, cssInputNoHoverTransparent } from "@/config/css-token
 import { siteConfig } from "@/config/site";
 import { useAutoHide } from "@/hooks/auto-hide";
 import { useUserContext } from "@/context/user-context";
+import { useFeatureFlags } from "@/context/feature-flags-context";
 
 export const MobileNav = () => {
   const pathname = usePathname();
@@ -33,6 +34,17 @@ export const MobileNav = () => {
   const { importRecipe } = useRecipesContext();
   const { userMenuOpen, setUserMenuOpen } = useUserContext();
   const [_isPending, startTransition] = useTransition();
+  const { groceryTrackingEnabled } = useFeatureFlags();
+
+  // Filter nav items based on feature flags
+  const visibleNavItems = useMemo(() => {
+    return siteConfig.navItems.filter((item) => {
+      if (item.key === "groceries" && !groceryTrackingEnabled) {
+        return false;
+      }
+      return true;
+    });
+  }, [groceryTrackingEnabled]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -278,7 +290,7 @@ export const MobileNav = () => {
               }`}
             >
               <ul className="flex items-center gap-2 text-[11px]">
-                {siteConfig.navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive =
                     pathname === item.href ||
                     (item.href !== "/" && pathname?.startsWith(item.href + "/"));

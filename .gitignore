@@ -6,6 +6,7 @@
 /node_modules
 /.pnp
 .pnp.js
+.pnpm-store
 
 # testing
 /coverage
@@ -51,3 +52,8 @@ bun.lockb
 
 docker-compose.yml
 
+# Windows installer binaries
+*.msi
+
+# local-only documents
+/.local

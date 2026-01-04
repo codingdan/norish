@@ -14,6 +14,8 @@ import { PanInfo } from "motion/react";
 import { DraggableCalendarItem } from "./draggable-calendar-item";
 
 import { CalendarItemViewDto, CaldavItemType } from "@/types";
+import { useFeatureFlags } from "@/context/feature-flags-context";
+import { useKitchenOwlConfig } from "@/hooks/integrations";
 import SwipeableRow, { SwipeableRowRef, SwipeAction } from "@/components/shared/swipable-row";
 import { MiniGroceries } from "@/components/Panel/consumers";
 import { MealIcon } from "@/lib/meal-icon";
@@ -36,6 +38,10 @@ export function DayTimelineBody({
   const rowRefs = useRef<Record<string, SwipeableRowRef | null>>({});
   const [groceriesOpen, setGroceriesOpen] = useState(false);
   const [currentRecipeId, setCurrentRecipeId] = useState<string | null>(null);
+
+  const { groceryTrackingEnabled } = useFeatureFlags();
+  const { isConfigured, isEnabled } = useKitchenOwlConfig();
+  const showGroceriesAction = groceryTrackingEnabled || (isConfigured && isEnabled);
 
   const openGroceries = useCallback((recipeId: string) => {
     setCurrentRecipeId(recipeId);
@@ -63,13 +69,15 @@ export function DayTimelineBody({
       if (hasRecipe) {
         const recipeId = item.itemType === "recipe" ? item.recipeId : item.recipeId!;
 
-        actions.push({
-          key: "groceries",
-          icon: ShoppingBagIcon,
-          color: "blue",
-          onPress: () => openGroceries(recipeId),
-          label: "View groceries",
-        });
+        if (showGroceriesAction) {
+          actions.push({
+            key: "groceries",
+            icon: ShoppingBagIcon,
+            color: "blue",
+            onPress: () => openGroceries(recipeId),
+            label: "View groceries",
+          });
+        }
 
         actions.push({
           key: "recipe",
@@ -91,7 +99,7 @@ export function DayTimelineBody({
 
       return actions;
     },
-    [openGroceries, navigateToRecipe, onDelete]
+    [openGroceries, navigateToRecipe, onDelete, showGroceriesAction]
   );
 
   if (!items?.length) {

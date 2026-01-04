@@ -89,6 +89,10 @@ export default function AIConfigForm() {
         maxTokens,
         autoTagAllergies,
         alwaysUseAI,
+        // Preserve ingredient normalization settings (managed in separate form)
+        enableIngredientNormalization: aiConfig?.enableIngredientNormalization ?? true,
+        useAiIngredientNormalization: aiConfig?.useAiIngredientNormalization ?? true,
+        ingredientNormalizationModel: aiConfig?.ingredientNormalizationModel,
       });
     } finally {
       setSaving(false);

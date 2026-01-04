@@ -59,6 +59,21 @@ export function TRPCProviderWrapper({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const previousStatusRef = useRef<ConnectionStatus>("connecting");
   const queryClientRef = useRef<QueryClient | null>(null);
+  const mountedRef = useRef(false);
+  const pendingStatusRef = useRef<ConnectionStatus | null>(null);
+
+  // Track mounted state
+  useEffect(() => {
+    mountedRef.current = true;
+    // Apply any pending status update that occurred before mount
+    if (pendingStatusRef.current !== null) {
+      setStatus(pendingStatusRef.current);
+      pendingStatusRef.current = null;
+    }
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Create clients once
   const [{ queryClient, trpcClient }] = useState(() => {
@@ -78,6 +93,18 @@ export function TRPCProviderWrapper({ children }: { children: ReactNode }) {
 
     const MAX_RETRIES = 10;
 
+    // Safe status update that handles pre-mount callbacks
+    // Use queueMicrotask to ensure update happens outside render phase
+    const safeSetStatus = (newStatus: ConnectionStatus) => {
+      queueMicrotask(() => {
+        if (mountedRef.current) {
+          setStatus(newStatus);
+        } else {
+          pendingStatusRef.current = newStatus;
+        }
+      });
+    };
+
     const wsClient = createWSClient({
       url: getWsUrl,
       retryDelayMs: (attemptIndex) => {
@@ -96,11 +123,11 @@ export function TRPCProviderWrapper({ children }: { children: ReactNode }) {
       },
       onOpen: () => {
         log.info("WebSocket connected");
-        setStatus("connected");
+        safeSetStatus("connected");
       },
       onClose: (cause) => {
         log.info({ cause }, "WebSocket closed");
-        setStatus("disconnected");
+        safeSetStatus("disconnected");
       },
     });
 

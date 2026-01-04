@@ -22,6 +22,9 @@ export type AdminMutationsResult = {
   updateRegistration: (enabled: boolean) => Promise<{ success: boolean }>;
   updatePasswordAuth: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
 
+  // Grocery tracking
+  updateGroceryTracking: (enabled: boolean) => Promise<{ success: boolean }>;
+
   // Auth providers (input types - isOverridden is set server-side)
   updateAuthProviderOIDC: (
     config: AuthProviderOIDCInput
@@ -81,6 +84,11 @@ export function useAdminMutations(): AdminMutationsResult {
   const updateRegistrationMutation = useMutation(trpc.admin.updateRegistration.mutationOptions());
   const updatePasswordAuthMutation = useMutation(trpc.admin.updatePasswordAuth.mutationOptions());
 
+  // Grocery tracking
+  const updateGroceryTrackingMutation = useMutation(
+    trpc.admin.updateGroceryTracking.mutationOptions()
+  );
+
   // Auth providers
   const updateOIDCMutation = useMutation(trpc.admin.auth.updateOIDC.mutationOptions());
   const updateGitHubMutation = useMutation(trpc.admin.auth.updateGitHub.mutationOptions());
@@ -135,6 +143,20 @@ export function useAdminMutations(): AdminMutationsResult {
     },
     updatePasswordAuth: async (enabled) => {
       return withInvalidate(updatePasswordAuthMutation.mutateAsync(enabled));
+    },
+
+    // Grocery tracking - also invalidate feature flags since UI components depend on it
+    updateGroceryTracking: async (enabled) => {
+      const result = await withInvalidate(updateGroceryTrackingMutation.mutateAsync(enabled));
+
+      if (result.success) {
+        // Invalidate feature flags query so navbar/buttons update immediately
+        await queryClient.invalidateQueries({
+          queryKey: trpc.featureFlags.getFeatureFlags.queryKey(),
+        });
+      }
+
+      return result;
     },
 
     // Auth providers

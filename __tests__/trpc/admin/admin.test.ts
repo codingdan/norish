@@ -180,6 +180,8 @@ describe("admin procedures", () => {
         maxTokens: 4096,
         autoTagAllergies: true,
         alwaysUseAI: false,
+        enableIngredientNormalization: true,
+        useAiIngredientNormalization: true,
       };
 
       // Current config has enabled: false
@@ -229,6 +231,8 @@ describe("admin procedures", () => {
         maxTokens: 4096,
         autoTagAllergies: true,
         alwaysUseAI: false,
+        enableIngredientNormalization: true,
+        useAiIngredientNormalization: true,
       };
 
       // Current config also has enabled: false

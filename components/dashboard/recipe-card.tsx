@@ -19,6 +19,8 @@ import { useRecipesContext } from "@/context/recipes-context";
 import { useAppStore } from "@/store/useAppStore";
 import { usePermissionsContext } from "@/context/permissions-context";
 import { useFavoritesQuery, useFavoritesMutation } from "@/hooks/favorites";
+import { useFeatureFlags } from "@/context/feature-flags-context";
+import { useKitchenOwlConfig } from "@/hooks/integrations";
 
 export default function RecipeCard({ recipe }: { recipe: RecipeDashboardDTO }) {
   const router = useRouter();
@@ -31,6 +33,9 @@ export default function RecipeCard({ recipe }: { recipe: RecipeDashboardDTO }) {
   const [open, setOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [groceriesOpen, setGroceriesOpen] = useState(false);
+  const { groceryTrackingEnabled } = useFeatureFlags();
+  const { isConfigured, isEnabled } = useKitchenOwlConfig();
+  const showGroceriesAction = groceryTrackingEnabled || (isConfigured && isEnabled);
 
   const isFavorite = checkFavorite(recipe.id);
   const averageRating = recipe.averageRating ?? null;
@@ -66,22 +71,25 @@ export default function RecipeCard({ recipe }: { recipe: RecipeDashboardDTO }) {
   const showDeleteAction = recipe.userId ? canDeleteRecipe(recipe.userId) : true;
 
   const actions: SwipeAction[] = useMemo(() => {
-    const baseActions: SwipeAction[] = [
-      {
+    const baseActions: SwipeAction[] = [];
+
+    if (showGroceriesAction) {
+      baseActions.push({
         key: "groceries",
         icon: ShoppingBagIcon,
         color: "blue",
         onPress: () => setGroceriesOpen(true),
         label: "View groceries",
-      },
-      {
-        key: "calendar",
-        icon: CalendarDaysIcon,
-        color: "yellow",
-        onPress: () => setCalendarOpen(true),
-        label: "Add to calendar",
-      },
-    ];
+      });
+    }
+
+    baseActions.push({
+      key: "calendar",
+      icon: CalendarDaysIcon,
+      color: "yellow",
+      onPress: () => setCalendarOpen(true),
+      label: "Add to calendar",
+    });
 
     if (showDeleteAction) {
       baseActions.push({
@@ -95,7 +103,7 @@ export default function RecipeCard({ recipe }: { recipe: RecipeDashboardDTO }) {
     }
 
     return baseActions;
-  }, [showDeleteAction, deleteRecipeButton]);
+  }, [showDeleteAction, deleteRecipeButton, showGroceriesAction]);
 
   return (
     <>

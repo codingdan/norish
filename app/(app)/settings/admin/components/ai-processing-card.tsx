@@ -6,6 +6,7 @@ import { SparklesIcon } from "@heroicons/react/16/solid";
 import AIConfigForm from "./ai-config-form";
 import VideoProcessingForm from "./video-processing-form";
 import PromptsForm from "./prompts-form";
+import IngredientNormalizationForm from "./ingredient-normalization-form";
 
 export default function AIProcessingCard() {
   return (
@@ -43,6 +44,14 @@ export default function AIProcessingCard() {
             title={<div className="flex items-center gap-2">Prompts</div>}
           >
             <PromptsForm />
+          </AccordionItem>
+
+          <AccordionItem
+            key="normalization"
+            subtitle="Ingredient name cleaning for shopping lists"
+            title={<div className="flex items-center gap-2">Ingredient Normalization</div>}
+          >
+            <IngredientNormalizationForm />
           </AccordionItem>
         </Accordion>
       </CardBody>

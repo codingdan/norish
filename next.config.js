@@ -1,6 +1,6 @@
 export default {
   output: "standalone",
-  allowedDevOrigins: ["localhost", "192.168.2.13"],
+  allowedDevOrigins: ["localhost"],
   devIndicators: false,
   serverExternalPackages: [
     "pino",

@@ -1,28 +1,37 @@
 "use client";
 
-import { addToast, Checkbox, Divider, Input } from "@heroui/react";
+import { addToast, Button, Checkbox, Divider, Input } from "@heroui/react";
 import { useState, useEffect, useCallback } from "react";
 
 import { parseIngredientWithDefaults } from "@/lib/helpers";
 import { useUnitsQuery } from "@/hooks/config";
 import { useRecipeIngredients } from "@/hooks/recipes/use-recipe-ingredients";
 import { useGroceriesMutations } from "@/hooks/groceries";
+import { useKitchenOwlConfig, useSendToKitchenOwl } from "@/hooks/integrations";
 import Panel from "@/components/Panel/Panel";
+import { useFeatureFlags } from "@/context/feature-flags-context";
 
 type MiniGroceriesProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recipeId: string;
+  servingMultiplier?: number;
 };
 
 function MiniGroceriesContent({
   recipeId,
   onOpenChange,
+  servingMultiplier = 1,
 }: {
   recipeId: string;
   onOpenChange: (open: boolean) => void;
+  servingMultiplier?: number;
 }) {
   const { createGroceriesFromData } = useGroceriesMutations();
+  const { isConfigured, isEnabled } = useKitchenOwlConfig();
+  const { sendIngredients, isLoading: isKitchenOwlLoading } = useSendToKitchenOwl();
+  const showKitchenOwl = isConfigured && isEnabled;
+  const { groceryTrackingEnabled } = useFeatureFlags();
 
   const { ingredients, isLoading } = useRecipeIngredients(recipeId);
   const { units } = useUnitsQuery();
@@ -37,6 +46,7 @@ function MiniGroceriesContent({
       ingredientName: string;
       amount?: string | null;
       unit?: string | null;
+      order: number;
     }[]
   >([]);
 
@@ -63,6 +73,7 @@ function MiniGroceriesContent({
           ingredientName: i.ingredientName,
           amount: i.amount?.toString() ?? null,
           unit: i.unit,
+          order: i.order,
         }))
       );
     }
@@ -114,7 +125,7 @@ function MiniGroceriesContent({
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  const handleConfirm = () => {
+  const handleAddToGroceries = () => {
     const selectedIngredients = localIngredients
       .filter((g) => selectedIds.includes(g.ingredientId))
       .map((ri) => ({
@@ -146,6 +157,43 @@ function MiniGroceriesContent({
       });
   };
 
+  const handleSendToKitchenOwl = async () => {
+    if (selectedIds.length === 0) {
+      addToast({
+        severity: "warning",
+        title: "No ingredients selected",
+        timeout: 2000,
+        shouldShowTimeoutProgress: true,
+        radius: "full",
+      });
+      return;
+    }
+
+    try {
+      const result = await sendIngredients(recipeId, {
+        ingredientIds: selectedIds,
+        servingMultiplier,
+      });
+
+      close();
+      addToast({
+        severity: "success",
+        title: `${result.successCount} ingredient${result.successCount !== 1 ? "s" : ""} added to KitchenOwl`,
+        timeout: 2000,
+        shouldShowTimeoutProgress: true,
+        radius: "full",
+      });
+    } catch (error) {
+      addToast({
+        severity: "danger",
+        title: error instanceof Error ? error.message : "Failed to add to KitchenOwl",
+        timeout: 2000,
+        shouldShowTimeoutProgress: true,
+        radius: "full",
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="text-default-500 p-4 text-base">Loading ingredients…</div>;
   }
@@ -163,7 +211,7 @@ function MiniGroceriesContent({
 
             return (
               <div
-                key={item.ingredientId}
+                key={item.order}
                 className="flex cursor-pointer items-start px-2 py-2"
                 role="button"
                 tabIndex={0}
@@ -220,22 +268,45 @@ function MiniGroceriesContent({
       {localIngredients.length > 0 && (
         <div className="mt-4">
           <Divider className="bg-default-200/40 my-2" />
-          <button
-            className="bg-primary text-primary-foreground w-full rounded-md py-2 text-xs font-semibold transition hover:opacity-90"
-            onClick={handleConfirm}
-          >
-            Add selected to groceries
-          </button>
+          <div className="flex flex-col gap-2">
+            {groceryTrackingEnabled && (
+              <Button className="w-full" color="primary" size="sm" onPress={handleAddToGroceries}>
+                Add to Groceries
+              </Button>
+            )}
+            {showKitchenOwl && (
+              <Button
+                className="w-full"
+                color="secondary"
+                isLoading={isKitchenOwlLoading}
+                size="sm"
+                onPress={handleSendToKitchenOwl}
+              >
+                Send to KitchenOwl
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export default function MiniGroceries({ open, onOpenChange, recipeId }: MiniGroceriesProps) {
+export default function MiniGroceries({
+  open,
+  onOpenChange,
+  recipeId,
+  servingMultiplier,
+}: MiniGroceriesProps) {
   return (
     <Panel open={open} title="Add to Groceries" onOpenChange={onOpenChange}>
-      {open && <MiniGroceriesContent recipeId={recipeId} onOpenChange={onOpenChange} />}
+      {open && (
+        <MiniGroceriesContent
+          recipeId={recipeId}
+          servingMultiplier={servingMultiplier}
+          onOpenChange={onOpenChange}
+        />
+      )}
     </Panel>
   );
 }

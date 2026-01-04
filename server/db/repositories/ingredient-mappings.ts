@@ -1,0 +1,179 @@
+import { eq, ilike, count, desc, inArray } from "drizzle-orm";
+
+import { db } from "../drizzle";
+import {
+  ingredientNameMappings,
+  type IngredientNameMapping,
+  type IngredientNameMappingInsert,
+} from "../schema";
+
+/**
+ * Escape special characters in LIKE patterns to prevent injection.
+ * Escapes: % _ \
+ */
+export function escapeLikePattern(search: string): string {
+  return search.replace(/[%_\\]/g, "\\$&");
+}
+
+export type MappingSource = "ai" | "fallback" | "manual";
+
+export type { IngredientNameMapping };
+
+export interface MappingInput {
+  rawName: string;
+  normalizedName: string;
+  source: MappingSource;
+}
+
+/**
+ * Get cached mappings for a list of raw ingredient names.
+ * Returns a Map of originalInput -> normalizedName for found entries.
+ * Keys are preserved in original case for caller convenience.
+ */
+export async function getCachedMappings(rawNames: string[]): Promise<Map<string, string>> {
+  if (rawNames.length === 0) {
+    return new Map();
+  }
+
+  // Build a map from normalized key -> original input(s)
+  const keyToOriginals = new Map<string, string[]>();
+  for (const rawName of rawNames) {
+    const key = rawName.toLowerCase().trim();
+    const existing = keyToOriginals.get(key) ?? [];
+    existing.push(rawName);
+    keyToOriginals.set(key, existing);
+  }
+
+  const normalizedKeys = Array.from(keyToOriginals.keys());
+
+  const mappings = await db.query.ingredientNameMappings.findMany({
+    where: inArray(ingredientNameMappings.rawName, normalizedKeys),
+  });
+
+  // Map results back to original input keys
+  const result = new Map<string, string>();
+  for (const mapping of mappings) {
+    const originals = keyToOriginals.get(mapping.rawName);
+    if (originals) {
+      for (const original of originals) {
+        result.set(original, mapping.normalizedName);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Save new ingredient name mappings to the database.
+ * Uses ON CONFLICT DO NOTHING to handle race conditions.
+ */
+export async function saveMappings(mappings: MappingInput[]): Promise<void> {
+  if (mappings.length === 0) {
+    return;
+  }
+
+  const values: IngredientNameMappingInsert[] = mappings.map((m) => ({
+    rawName: m.rawName.toLowerCase().trim(),
+    normalizedName: m.normalizedName.trim(),
+    source: m.source,
+  }));
+
+  await db.insert(ingredientNameMappings).values(values).onConflictDoNothing();
+}
+
+export interface ListMappingsResult {
+  entries: IngredientNameMapping[];
+  total: number;
+}
+
+/**
+ * List ingredient name mappings with pagination and optional search.
+ */
+export async function listMappings(
+  page: number,
+  limit: number,
+  search?: string
+): Promise<ListMappingsResult> {
+  const offset = (page - 1) * limit;
+
+  const whereClause = search
+    ? ilike(ingredientNameMappings.rawName, `%${escapeLikePattern(search)}%`)
+    : undefined;
+
+  const [mappings, totalResult] = await Promise.all([
+    db
+      .select()
+      .from(ingredientNameMappings)
+      .where(whereClause)
+      .orderBy(desc(ingredientNameMappings.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db.select({ count: count() }).from(ingredientNameMappings).where(whereClause),
+  ]);
+
+  return {
+    entries: mappings,
+    total: totalResult[0]?.count ?? 0,
+  };
+}
+
+/**
+ * Add a new ingredient name mapping with source="manual".
+ * rawName is lowercased and trimmed.
+ */
+export async function addMapping(
+  rawName: string,
+  normalizedName: string
+): Promise<IngredientNameMapping> {
+  const [created] = await db
+    .insert(ingredientNameMappings)
+    .values({
+      rawName: rawName.toLowerCase().trim(),
+      normalizedName: normalizedName.trim(),
+      source: "manual",
+    })
+    .returning();
+
+  if (!created) {
+    throw new Error("Failed to create ingredient mapping");
+  }
+
+  return created;
+}
+
+/**
+ * Update an existing ingredient name mapping's normalized name.
+ */
+export async function updateMapping(
+  id: string,
+  normalizedName: string
+): Promise<IngredientNameMapping | null> {
+  const [updated] = await db
+    .update(ingredientNameMappings)
+    .set({
+      normalizedName,
+      updatedAt: new Date(),
+    })
+    .where(eq(ingredientNameMappings.id, id))
+    .returning();
+
+  return updated ?? null;
+}
+
+/**
+ * Delete a single ingredient name mapping by id.
+ */
+export async function deleteMapping(id: string): Promise<void> {
+  await db.delete(ingredientNameMappings).where(eq(ingredientNameMappings.id, id));
+}
+
+/**
+ * Delete all ingredient name mappings.
+ * Returns the number of deleted entries.
+ */
+export async function clearAllMappings(): Promise<number> {
+  const result = await db.delete(ingredientNameMappings);
+
+  return result.rowCount ?? 0;
+}

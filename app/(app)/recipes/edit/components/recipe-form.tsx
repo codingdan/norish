@@ -87,22 +87,29 @@ export default function RecipeForm({ mode, initialData }: RecipeFormProps) {
   // Initialize ingredients and steps from initialData
   useEffect(() => {
     if (initialData && mode === "edit") {
-      const initIngredients: ParsedIngredient[] = initialData.recipeIngredients.map((ing) => ({
-        ingredientName: ing.ingredientName,
-        amount: ing.amount,
-        unit: ing.unit,
-        order: ing.order,
-        systemUsed: ing.systemUsed,
-      }));
+      // Filter ingredients to only show those matching the recipe's measurement system
+      // AI imports store both metric and US versions - we only want to edit one system
+      const initIngredients: ParsedIngredient[] = initialData.recipeIngredients
+        .filter((ing) => ing.systemUsed === initialData.systemUsed)
+        .map((ing) => ({
+          ingredientName: ing.ingredientName,
+          amount: ing.amount,
+          unit: ing.unit,
+          order: ing.order,
+          systemUsed: ing.systemUsed,
+        }));
 
       setIngredients(initIngredients);
 
-      const initSteps: Step[] = initialData.steps.map((s) => ({
-        step: s.step,
-        order: s.order,
-        systemUsed: s.systemUsed,
-        images: s.images || [],
-      }));
+      // Filter steps to only show those matching the recipe's measurement system
+      const initSteps: Step[] = initialData.steps
+        .filter((s) => s.systemUsed === initialData.systemUsed)
+        .map((s) => ({
+          step: s.step,
+          order: s.order,
+          systemUsed: s.systemUsed,
+          images: s.images || [],
+        }));
 
       setSteps(initSteps);
     }
