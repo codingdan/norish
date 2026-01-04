@@ -7,13 +7,6 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
-    environmentMatchGlobs: [
-      // Server-side tests need node environment for node: imports
-      ["**/__tests__/repositories/**", "node"],
-      ["**/__tests__/services/**", "node"],
-      ["**/__tests__/integrations/**", "node"],
-      ["**/server/**/__tests__/**", "node"],
-    ],
     globals: true,
     env: {
       NODE_ENV: "development",
